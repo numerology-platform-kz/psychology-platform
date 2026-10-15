@@ -276,3 +276,8 @@ revoke execute on function public.manage_user_account(uuid, text) from anon;
 revoke execute on function public.apply_teacher_code(text) from anon;
 grant execute on function public.apply_teacher_code(text) to authenticated;
 grant execute on function public.manage_user_account(uuid, text) to authenticated;
+
+-- Права для вошедших пользователей (сами строки защищены правилами RLS выше)
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.profiles, public.schools, public.access_periods, public.account_events, public.habits, public.habit_checks to authenticated;
+grant execute on function public.get_my_role(), public.get_my_teacher_id() to authenticated;
