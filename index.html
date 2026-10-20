@@ -154,32 +154,73 @@ select.input option { background: #0E1A3A; color: #fff; }
 .check-label input { accent-color: var(--coral); width: 16px; height: 16px; }
 
 /* Трекер привычек */
+.tracker-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.tracker-tab { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line-soft); background: rgba(255,255,255,.03); color: var(--text); cursor: pointer; font-size: 15px; }
+.tracker-tab.active { background: rgba(244,165,130,.18); border-color: var(--coral); color: var(--cream); }
 .tracker-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.week-nav { display: flex; align-items: center; gap: 10px; color: var(--cream); font-size: 16px; }
-.week-nav button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--coral); font-size: 18px; cursor: pointer; }
-.habit-grid { display: grid; grid-template-columns: minmax(150px, 1fr) repeat(7, 46px) 36px; align-items: center; column-gap: 4px; }
-.habit-head { padding: 0 0 10px; border-bottom: 1px solid rgba(244,165,130,.14); }
-.habit-head div { text-align: center; color: var(--coral); font-size: 13px; font-weight: 600; line-height: 1.3; }
-.habit-head div.today { color: var(--cream); }
-.habit-head div span { display: block; font-weight: 400; color: var(--muted); }
-.habit-head .habit-head-title { text-align: left; }
-.habit-row { padding: 10px 0; border-bottom: 1px solid rgba(244,165,130,.14); }
-.habit-row .day { display: flex; justify-content: center; }
-.habit-mobile-days { display: none; }
-.habit-mobile-days span { display: block; }
-.habit-dot {
-  width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line);
-  background: transparent; cursor: pointer; color: #0A1430; font-size: 16px; font-weight: 700; padding: 0;
-  transition: background .15s, transform .1s;
+.week-nav { display: flex; align-items: center; gap: 12px; color: var(--cream); font-size: 20px; font-family: PT Serif, Georgia, serif; }
+.week-nav span { min-width: 170px; text-align: center; }
+.week-nav button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--coral); font-size: 18px; cursor: pointer; font-family: Arial, sans-serif; }
+.tracker-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.month-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }
+.month-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 900px; color: var(--text); font-size: 12px; }
+.month-table th, .month-table td { border-bottom: 1px solid rgba(244,165,130,.14); text-align: center; padding: 6px 1px; }
+.month-table th { color: var(--coral); font-weight: 600; line-height: 1.25; }
+.month-table th span { display: block; font-weight: 400; color: var(--muted); font-size: 10px; }
+.month-table th.today, .month-table td.today { background: rgba(244,165,130,.13); }
+.month-table th.today span { color: var(--cream); }
+.month-table .we { background: rgba(255,255,255,.035); }
+.month-table .mt-name { text-align: left; min-width: 130px; max-width: 200px; padding: 6px 10px 6px 4px; position: sticky; left: 0; z-index: 1; background: #17264f; color: var(--cream); font-size: 14px; word-break: break-word; }
+.month-table th.mt-name { color: var(--coral); font-size: 13px; }
+.month-table .mt-total { min-width: 52px; color: var(--cream); font-size: 13px; padding: 6px 4px; }
+.month-table .mt-total small { display: block; color: var(--coral); font-size: 11px; }
+.month-table tfoot td { color: var(--muted); font-size: 11px; border-bottom: none; }
+.mcell {
+  width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--line); background: transparent;
+  cursor: pointer; color: #0A1430; font-size: 13px; font-weight: 700; padding: 0; line-height: 1;
 }
-.habit-dot:hover { transform: scale(1.06); }
-.habit-dot.done { background: linear-gradient(135deg, var(--coral), var(--coral2)); border-color: var(--coral); }
-.habit-dot:disabled { opacity: .25; cursor: default; transform: none; }
-.habit-name { color: var(--cream); font-size: 15px; min-width: 150px; }
-.habit-streak { color: var(--coral); font-size: 13px; white-space: nowrap; }
-.habit-del { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+.mcell:hover { border-color: var(--coral); }
+.mcell.done { background: linear-gradient(135deg, var(--coral), var(--coral2)); border-color: var(--coral); }
+.mcell:disabled { opacity: .22; cursor: default; }
+.habit-del { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 4px; }
 .habit-del:hover { color: var(--bad); }
-.habit-add { display: flex; gap: 10px; margin-top: 16px; max-width: 520px; }
+.habit-add { display: flex; gap: 10px; margin-top: 16px; max-width: 560px; }
+.scroll-hint { display: none; color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+
+/* Вес и ИМТ */
+.body-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 18px; }
+.form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.form-row span { font-size: 14px; color: var(--muted); }
+.form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.stat-box { border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px; background: rgba(255,255,255,.03); }
+.stat-box span { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.stat-box strong { display: block; color: var(--cream); font-size: 26px; font-family: PT Serif, Georgia, serif; font-weight: 500; }
+.stat-box em { display: block; font-style: normal; font-size: 13px; margin-top: 4px; color: var(--coral); }
+.stat-box.recommended { border-color: var(--coral); background: rgba(244,165,130,.10); }
+.bmi-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 13px; margin-top: 6px; }
+.bmi-table tr.current td { background: rgba(244,165,130,.16); color: var(--cream); font-weight: 600; }
+.bmi-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 0; }
+.weight-list { max-height: 260px; overflow-y: auto; }
+.note-small { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 10px; }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff !important; color: #222 !important; }
+  .sidebar, .no-print, #welcomeTop, .dashboard-head, .tracker-tabs, .habit-add, .scroll-hint, #trackerMsg, .habit-del { display: none !important; }
+  .platform, .main { display: block; padding: 0 !important; border: none !important; background: #fff !important; min-height: 0; }
+  .table-card { border: none !important; background: #fff !important; padding: 0 !important; overflow: visible !important; }
+  .print-title { display: block !important; color: #222; font-family: PT Serif, Georgia, serif; font-size: 20px; margin: 0 0 8px; }
+  .month-wrap { overflow: visible; }
+  .month-table { min-width: 0; color: #222; }
+  .month-table th, .month-table td { border: 1px solid #bbb; color: #222 !important; background: #fff !important; }
+  .month-table .mt-name { position: static; background: #fff !important; color: #222 !important; }
+  .month-table th span, .month-table .mt-total small { color: #555 !important; }
+  .mcell { border-color: #999; width: 18px; height: 18px; }
+  .mcell.done { background: #E8826A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .mcell:disabled { opacity: 1; }
+}
+.print-title { display: none; }
 
 /* Авторизация */
 .auth-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 16px; }
@@ -227,14 +268,11 @@ select.input option { background: #0E1A3A; color: #fff; }
   .dashboard-head h2 { font-size: 26px; }
   .cards { grid-template-columns: 1fr; }
   .data-table { font-size: 13px; }
-  .habit-grid { grid-template-columns: repeat(7, 1fr) 30px; row-gap: 8px; column-gap: 2px; }
-  .habit-head { display: none; }
-  .habit-row .habit-name { grid-column: 1 / -1; }
-  .habit-mobile-days { display: contents; }
-  .habit-mobile-days div { text-align: center; font-size: 11px; color: var(--muted); line-height: 1.2; }
-  .habit-mobile-days div.today { color: var(--cream); }
-  .habit-dot { width: 32px; height: 32px; }
   .habit-add { flex-direction: column; }
+  .scroll-hint { display: block; }
+  .form-pair { grid-template-columns: 1fr; }
+  .week-nav { font-size: 17px; }
+  .week-nav span { min-width: 130px; }
   .auth-card { padding: 28px 18px; }
 }
 </style>
@@ -505,155 +543,369 @@ function renderSectionPage(key) {
 }
 
 /* ============================================================
-   ТРЕКЕР ПРИВЫЧЕК
+   ТРЕКЕР ПРИВЫЧЕК — месячный календарь + вес и ИМТ
    ============================================================ */
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-let trackerWeekOffset = 0;
+const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+let trackerTab = "habits";
+let trackerMonth = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
 let trackerHabits = [];
 let trackerChecks = new Set(); // "habitId|YYYY-MM-DD"
+let prevMonthHabits = [];
 
 function isoDay(d) {
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-function startOfWeek(offset) {
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  const shift = (d.getDay() + 6) % 7; // понедельник = 0
-  d.setDate(d.getDate() - shift + offset * 7);
-  return d;
+function monthKey(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+function monthDays(first) {
+  const n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return Array.from({ length: n }, (_, i) => new Date(first.getFullYear(), first.getMonth(), i + 1));
 }
-function weekDays(offset) {
-  const start = startOfWeek(offset);
-  return Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
-}
-function weekLabel(days) {
-  const opts = { day: "numeric", month: "short" };
-  return days[0].toLocaleDateString("ru-RU", opts) + " — " + days[6].toLocaleDateString("ru-RU", opts);
-}
-function habitStreak(habitId) {
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  if (!trackerChecks.has(habitId + "|" + isoDay(d))) d.setDate(d.getDate() - 1); // сегодня ещё можно отметить
-  let n = 0;
-  while (trackerChecks.has(habitId + "|" + isoDay(d))) { n++; d.setDate(d.getDate() - 1); }
-  return n;
-}
-function daysWord(n) {
-  const a = n % 10, b = n % 100;
-  if (a === 1 && b !== 11) return "день";
-  if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return "дня";
-  return "дней";
-}
+function fmtNum(v, digits) { return Number(v).toLocaleString("ru-RU", { maximumFractionDigits: digits == null ? 1 : digits }); }
+function parseNum(v) { const n = parseFloat(String(v || "").replace(",", ".").trim()); return isFinite(n) ? n : NaN; }
 
 async function renderHabitTracker() {
   const s = SECTION_BY_KEY.tracker;
   contentEl().innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
-        <div><h2>${s.icon} ${escapeHtml(s.title)}</h2><p>Добавьте привычки и отмечайте каждый день, когда выполнили</p></div>
+        <div><h2>${s.icon} ${escapeHtml(s.title)}</h2><p>Впишите свои привычки и отмечайте каждый день, когда выполнили</p></div>
+      </div>
+      <div class="tracker-tabs">
+        <button class="tracker-tab ${trackerTab === "habits" ? "active" : ""}" onclick="switchTrackerTab('habits')">📅 Привычки на месяц</button>
+        <button class="tracker-tab ${trackerTab === "body" ? "active" : ""}" onclick="switchTrackerTab('body')">⚖️ Вес и ИМТ</button>
       </div>
       <div class="table-card" id="trackerBox"><div class="empty-table">Загрузка...</div></div>
     </div>`;
+  if (trackerTab === "body") { await renderBodyTab(); return; }
   await loadTrackerData();
   drawTracker();
 }
+function switchTrackerTab(tab) { trackerTab = tab; renderHabitTracker(); }
 
 async function loadTrackerData() {
   const uid = window.currentUserId;
-  const days = weekDays(trackerWeekOffset);
-  const from = new Date(Math.min(days[0].getTime(), Date.now() - 400 * 86400000));
-  const [{ data: habits, error: e1 }, { data: checks, error: e2 }] = await Promise.all([
-    supabaseClient.from("habits").select("id, title, sort_order, created_at").eq("user_id", uid).order("sort_order").order("created_at"),
-    supabaseClient.from("habit_checks").select("habit_id, day").eq("user_id", uid).gte("day", isoDay(from))
+  const days = monthDays(trackerMonth);
+  const prev = new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() - 1, 1);
+  const [{ data: habits, error: e1 }, { data: checks, error: e2 }, { data: prevH }] = await Promise.all([
+    supabaseClient.from("habits").select("id, title, sort_order, created_at").eq("user_id", uid).eq("month", monthKey(trackerMonth)).order("sort_order").order("created_at"),
+    supabaseClient.from("habit_checks").select("habit_id, day").eq("user_id", uid).gte("day", isoDay(days[0])).lte("day", isoDay(days[days.length - 1])),
+    supabaseClient.from("habits").select("title, sort_order").eq("user_id", uid).eq("month", monthKey(prev)).order("sort_order")
   ]);
   if (e1 || e2) console.error("Ошибка загрузки трекера:", e1 || e2);
   trackerHabits = habits || [];
   trackerChecks = new Set((checks || []).map(c => c.habit_id + "|" + c.day));
+  prevMonthHabits = prevH || [];
 }
 
 function drawTracker() {
   const box = document.getElementById("trackerBox");
   if (!box) return;
-  const days = weekDays(trackerWeekOffset);
+  const days = monthDays(trackerMonth);
   const todayIso = isoDay(new Date());
+  const passed = days.filter(d => isoDay(d) <= todayIso).length; // сколько дней месяца уже наступило
+  const monthTitle = MONTHS[trackerMonth.getMonth()] + " " + trackerMonth.getFullYear();
+  const prevName = MONTHS[(trackerMonth.getMonth() + 11) % 12].toLowerCase();
 
-  const dayHead = days.map((d, i) => `<div class="${isoDay(d) === todayIso ? "today" : ""}">${WEEKDAYS[i]}<span>${d.getDate()}</span></div>`).join("");
-  const rows = trackerHabits.map(h => {
-    const streak = habitStreak(h.id);
-    const weekDone = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
-    return `<div class="habit-grid habit-row">
-      <div class="habit-name">${escapeHtml(h.title)}<div class="habit-streak">${streak ? "🔥 " + streak + " " + daysWord(streak) + " подряд" : "Начните сегодня"} · ${weekDone}/7</div></div>
-      <div class="habit-mobile-days">${dayHead}<div></div></div>
-      ${days.map(d => {
-        const iso = isoDay(d);
-        const done = trackerChecks.has(h.id + "|" + iso);
-        const future = iso > todayIso;
-        return `<div class="day"><button class="habit-dot${done ? " done" : ""}" ${future ? "disabled" : ""}
-          onclick='toggleHabitDay(${JSON.stringify(h.id)}, ${JSON.stringify(iso)})' aria-label="Отметить">${done ? "✓" : ""}</button></div>`;
-      }).join("")}
-      <div><button class="habit-del" title="Удалить привычку" onclick='deleteHabit(${JSON.stringify(h.id)}, ${JSON.stringify(h.title)})'>×</button></div>
-    </div>`;
+  const head = days.map(d => {
+    const wd = (d.getDay() + 6) % 7;
+    const cls = [wd >= 5 ? "we" : "", isoDay(d) === todayIso ? "today" : ""].join(" ");
+    return `<th class="${cls}">${d.getDate()}<span>${WEEKDAYS[wd]}</span></th>`;
   }).join("");
 
+  const rows = trackerHabits.map(h => {
+    const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
+    const pct = passed ? Math.round(done / passed * 100) : 0;
+    return `<tr>
+      <td class="mt-name">${escapeHtml(h.title)}</td>
+      ${days.map(d => {
+        const iso = isoDay(d), wd = (d.getDay() + 6) % 7;
+        const isDone = trackerChecks.has(h.id + "|" + iso);
+        const cls = [wd >= 5 ? "we" : "", iso === todayIso ? "today" : ""].join(" ");
+        return `<td class="${cls}"><button class="mcell${isDone ? " done" : ""}" ${iso > todayIso ? "disabled" : ""}
+          onclick='toggleHabitDay(${JSON.stringify(h.id)}, ${JSON.stringify(iso)})' aria-label="${d.getDate()} число">${isDone ? "✓" : ""}</button></td>`;
+      }).join("")}
+      <td class="mt-total">${done}/${passed}<small>${pct}%</small></td>
+      <td><button class="habit-del" title="Удалить привычку" onclick='deleteHabit(${JSON.stringify(h.id)}, ${JSON.stringify(h.title)})'>×</button></td>
+    </tr>`;
+  }).join("");
+
+  const foot = trackerHabits.length ? `<tfoot><tr><td class="mt-name" style="font-size:12px;color:var(--muted);">Выполнено за день</td>${days.map(d => {
+    const iso = isoDay(d);
+    const n = trackerHabits.filter(h => trackerChecks.has(h.id + "|" + iso)).length;
+    return `<td>${iso <= todayIso ? n : ""}</td>`;
+  }).join("")}<td></td><td></td></tr></tfoot>` : "";
+
   box.innerHTML = `
-    <div class="tracker-toolbar">
+    <div class="print-title">Трекер привычек — ${monthTitle}</div>
+    <div class="tracker-toolbar no-print">
       <div class="week-nav">
-        <button onclick="changeTrackerWeek(-1)" aria-label="Предыдущая неделя">‹</button>
-        <span>${weekLabel(days)}</span>
-        <button onclick="changeTrackerWeek(1)" aria-label="Следующая неделя">›</button>
+        <button onclick="changeTrackerMonth(-1)" aria-label="Предыдущий месяц">‹</button>
+        <span>${monthTitle}</span>
+        <button onclick="changeTrackerMonth(1)" aria-label="Следующий месяц">›</button>
       </div>
-      ${trackerWeekOffset !== 0 ? `<button class="btn btn-ghost btn-small" onclick="changeTrackerWeek(0, true)">Текущая неделя</button>` : ""}
+      <div class="tracker-actions">
+        ${monthKey(trackerMonth) !== monthKey(new Date()) ? `<button class="btn btn-ghost btn-small" onclick="changeTrackerMonth(0, true)">Текущий месяц</button>` : ""}
+        ${trackerHabits.length ? `<button class="btn btn-ghost btn-small" onclick="window.print()">🖨 Распечатать / PDF</button>` : ""}
+      </div>
     </div>
     ${trackerHabits.length ? `
-      <div class="habit-grid habit-head"><div class="habit-head-title">Привычка</div>${dayHead}<div></div></div>
-      ${rows}` : `<div class="empty-table">Привычек пока нет. Добавьте первую, например «Пить 2 литра воды» или «10 минут чтения»</div>`}
-    <div class="habit-add">
+      <div class="scroll-hint">Листайте таблицу вправо или поверните телефон горизонтально</div>
+      <div class="month-wrap">
+        <table class="month-table">
+          <thead><tr><th class="mt-name">Привычка</th>${head}<th class="mt-total">Итог</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+          ${foot}
+        </table>
+      </div>` : `<div class="empty-table">На ${monthTitle.toLowerCase()} привычек пока нет. Впишите первую, например «Пить 2 литра воды» или «10 минут чтения»
+        ${prevMonthHabits.length ? `<br><br><button class="btn btn-small" onclick="copyPrevMonthHabits()">Перенести привычки из месяца «${prevName}» (${prevMonthHabits.length})</button>` : ""}</div>`}
+    <div class="habit-add no-print">
       <input id="newHabitInput" class="input" type="text" maxlength="80" placeholder="Новая привычка" onkeydown="if(event.key==='Enter')addHabit()">
       <button class="btn" onclick="addHabit()">Добавить</button>
     </div>
     <div id="trackerMsg" class="msg"></div>`;
+
+  const todayCell = box.querySelector("th.today");
+  const wrap = box.querySelector(".month-wrap");
+  if (todayCell && wrap && wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = Math.max(0, todayCell.offsetLeft - wrap.clientWidth / 2);
 }
 
-async function changeTrackerWeek(step, reset) {
-  trackerWeekOffset = reset ? 0 : trackerWeekOffset + step;
+async function changeTrackerMonth(step, reset) {
+  const now = new Date();
+  trackerMonth = reset ? new Date(now.getFullYear(), now.getMonth(), 1) : new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() + step, 1);
   await loadTrackerData();
   drawTracker();
 }
 
 async function addHabit() {
   const input = document.getElementById("newHabitInput");
-  const msg = document.getElementById("trackerMsg");
   const title = (input?.value || "").trim();
-  if (!title) { if (msg) { msg.textContent = "Введите название привычки"; msg.className = "msg err"; } return; }
-  const { error } = await supabaseClient.from("habits").insert({ user_id: window.currentUserId, title, sort_order: trackerHabits.length });
-  if (error) { if (msg) { msg.textContent = "Не удалось добавить: " + error.message; msg.className = "msg err"; } return; }
+  if (!title) { setMsgEl("trackerMsg", "Введите название привычки", false); return; }
+  const { error } = await supabaseClient.from("habits").insert({ user_id: window.currentUserId, title, month: monthKey(trackerMonth), sort_order: trackerHabits.length });
+  if (error) { setMsgEl("trackerMsg", "Не удалось добавить: " + error.message, false); return; }
   await loadTrackerData();
   drawTracker();
   document.getElementById("newHabitInput")?.focus();
+}
+
+async function copyPrevMonthHabits() {
+  const rows = prevMonthHabits.map((h, i) => ({ user_id: window.currentUserId, title: h.title, month: monthKey(trackerMonth), sort_order: i }));
+  const { error } = await supabaseClient.from("habits").insert(rows);
+  if (error) { setMsgEl("trackerMsg", "Не удалось перенести: " + error.message, false); return; }
+  await loadTrackerData();
+  drawTracker();
 }
 
 async function toggleHabitDay(habitId, iso) {
   const key = habitId + "|" + iso;
   const wasDone = trackerChecks.has(key);
   if (wasDone) trackerChecks.delete(key); else trackerChecks.add(key);
+  const wrap = document.querySelector(".month-wrap");
+  const scroll = wrap ? wrap.scrollLeft : 0;
   drawTracker();
-  const req = wasDone
+  const w2 = document.querySelector(".month-wrap"); if (w2) w2.scrollLeft = scroll;
+  const { error } = await (wasDone
     ? supabaseClient.from("habit_checks").delete().eq("habit_id", habitId).eq("day", iso)
-    : supabaseClient.from("habit_checks").insert({ habit_id: habitId, user_id: window.currentUserId, day: iso });
-  const { error } = await req;
+    : supabaseClient.from("habit_checks").insert({ habit_id: habitId, user_id: window.currentUserId, day: iso }));
   if (error) {
     if (wasDone) trackerChecks.add(key); else trackerChecks.delete(key);
     drawTracker();
-    const msg = document.getElementById("trackerMsg");
-    if (msg) { msg.textContent = "Не удалось сохранить отметку. Проверьте интернет и попробуйте ещё раз"; msg.className = "msg err"; }
+    setMsgEl("trackerMsg", "Не удалось сохранить отметку. Проверьте интернет и попробуйте ещё раз", false);
   }
 }
 
 async function deleteHabit(habitId, title) {
-  if (!(await customConfirm(`Удалить привычку «${title}» вместе со всеми отметками?`))) return;
+  if (!(await customConfirm(`Удалить привычку «${title}» вместе со всеми отметками за этот месяц?`))) return;
   const { error } = await supabaseClient.from("habits").delete().eq("id", habitId);
   if (error) { customAlert("Не удалось удалить: " + error.message); return; }
   await loadTrackerData();
   drawTracker();
+}
+
+/* ---------- Вес и ИМТ ---------- */
+const ACTIVITY_LEVELS = [
+  { v: 1.2,   label: "Минимальная — сидячая работа, без спорта" },
+  { v: 1.375, label: "Низкая — 1–3 тренировки в неделю" },
+  { v: 1.55,  label: "Средняя — 3–5 тренировок в неделю" },
+  { v: 1.725, label: "Высокая — 6–7 тренировок в неделю" },
+  { v: 1.9,   label: "Очень высокая — физическая работа и спорт" }
+];
+const BMI_TABLE = [
+  { max: 16,       label: "Выраженный дефицит массы тела", range: "менее 16",    color: "#7FA7E8" },
+  { max: 18.5,     label: "Недостаточная масса тела",       range: "16 – 18,4",   color: "#9CC3F0" },
+  { max: 25,       label: "Норма",                          range: "18,5 – 24,9", color: "#8fe3b0" },
+  { max: 30,       label: "Избыточная масса тела",          range: "25 – 29,9",   color: "#F2D16B" },
+  { max: 35,       label: "Ожирение I степени",             range: "30 – 34,9",   color: "#F4A582" },
+  { max: 40,       label: "Ожирение II степени",            range: "35 – 39,9",   color: "#E8826A" },
+  { max: Infinity, label: "Ожирение III степени",           range: "40 и более",  color: "#e06464" }
+];
+let bodyProfile = null;
+let weightLog = [];
+
+function bmiCategory(bmi) { return BMI_TABLE.findIndex(r => bmi < r.max); }
+
+async function renderBodyTab() {
+  const uid = window.currentUserId;
+  const [{ data: prof }, { data: log }] = await Promise.all([
+    supabaseClient.from("body_profile").select("sex, birth_year, height_cm, activity").eq("user_id", uid).maybeSingle(),
+    supabaseClient.from("weight_log").select("day, weight_kg").eq("user_id", uid).order("day", { ascending: true })
+  ]);
+  bodyProfile = prof || {};
+  weightLog = (log || []).map(r => ({ day: r.day, w: Number(r.weight_kg) }));
+  drawBodyTab();
+}
+
+function drawBodyTab() {
+  const box = document.getElementById("trackerBox");
+  if (!box) return;
+  const p = bodyProfile || {};
+  const thisYear = new Date().getFullYear();
+  const last = weightLog[weightLog.length - 1];
+  const first = weightLog[0];
+
+  let results = `<div class="empty-table">Заполните рост и добавьте свой вес — здесь появится ИМТ и норма калорий</div>`;
+  if (p.height_cm && last) {
+    const h = Number(p.height_cm) / 100;
+    const bmi = last.w / (h * h);
+    const cat = bmiCategory(bmi);
+    const c = BMI_TABLE[cat];
+    const normMin = 18.5 * h * h, normMax = 24.9 * h * h;
+    const change = weightLog.length > 1 ? last.w - first.w : null;
+
+    let calories = "";
+    if (p.sex && p.birth_year && p.activity) {
+      const age = thisYear - Number(p.birth_year);
+      const bmr = 10 * last.w + 6.25 * Number(p.height_cm) - 5 * age + (p.sex === "m" ? 5 : -161);
+      const keep = bmr * Number(p.activity);
+      const floor = p.sex === "m" ? 1500 : 1200;
+      const lose = Math.max(keep * 0.85, floor);
+      const gain = keep * 1.15;
+      const rec = bmi < 18.5 ? "gain" : (bmi >= 25 ? "lose" : "keep");
+      const r10 = (v) => Math.round(v / 10) * 10;
+      calories = `
+        <div class="table-title" style="margin-top:6px;">Калорийность в день</div>
+        <div class="stat-row">
+          <div class="stat-box ${rec === "lose" ? "recommended" : ""}"><span>Плавное снижение веса</span><strong>${fmtNum(r10(lose), 0)}</strong><em>ккал${rec === "lose" ? " · рекомендуем" : ""}</em></div>
+          <div class="stat-box ${rec === "keep" ? "recommended" : ""}"><span>Поддержание веса</span><strong>${fmtNum(r10(keep), 0)}</strong><em>ккал${rec === "keep" ? " · рекомендуем" : ""}</em></div>
+          <div class="stat-box ${rec === "gain" ? "recommended" : ""}"><span>Плавный набор веса</span><strong>${fmtNum(r10(gain), 0)}</strong><em>ккал${rec === "gain" ? " · рекомендуем" : ""}</em></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box"><span>Базовый обмен (покой)</span><strong>${fmtNum(r10(bmr), 0)}</strong><em>ккал</em></div>
+          <div class="stat-box"><span>Норма воды</span><strong>${fmtNum(Math.round(last.w * 30 / 100) / 10, 1)}</strong><em>литра в день</em></div>
+        </div>`;
+    } else {
+      calories = `<div class="empty-table" style="padding:14px;">Укажите пол, год рождения и активность — рассчитаю норму калорий</div>`;
+    }
+
+    results = `
+      <div class="stat-row">
+        <div class="stat-box"><span>Текущий вес</span><strong>${fmtNum(last.w)} кг</strong><em>${fmtDate(last.day)}</em></div>
+        <div class="stat-box"><span>Индекс массы тела</span><strong>${fmtNum(Math.round(bmi * 10) / 10)}</strong>
+          <span class="bmi-badge" style="background:${c.color}33;color:${c.color};margin:6px 0 0;">${c.label}</span></div>
+        <div class="stat-box"><span>Нормальный вес для роста ${fmtNum(p.height_cm, 0)} см</span><strong style="font-size:21px;">${fmtNum(normMin)} – ${fmtNum(normMax)} кг</strong></div>
+        ${change !== null ? `<div class="stat-box"><span>Изменение с ${fmtDate(first.day)}</span><strong>${change > 0 ? "+" : ""}${fmtNum(change)} кг</strong></div>` : ""}
+      </div>
+      ${calories}
+      ${weightChartSvg()}
+      <div class="table-title" style="margin-top:18px;">Таблица ИМТ</div>
+      <table class="data-table bmi-table">
+        <thead><tr><th>ИМТ</th><th>Оценка</th></tr></thead>
+        <tbody>${BMI_TABLE.map((r, i) => `<tr class="${i === cat ? "current" : ""}"><td>${r.range}</td><td><span class="bmi-dot" style="background:${r.color};"></span>${r.label}${i === cat ? " — вы здесь" : ""}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="note-small">ИМТ = вес (кг) ÷ рост² (м). Калорийность рассчитана по формуле Миффлина — Сан Жеора с учётом активности. Расчёты ориентировочные и не заменяют консультацию врача</div>`;
+  }
+
+  box.innerHTML = `
+    <div class="body-grid">
+      <div>
+        <div class="table-title">Мои данные</div>
+        <div class="form-pair">
+          <label class="form-row"><span>Пол</span>
+            <select id="bpSex" class="input"><option value="">—</option><option value="f" ${p.sex === "f" ? "selected" : ""}>Женский</option><option value="m" ${p.sex === "m" ? "selected" : ""}>Мужской</option></select></label>
+          <label class="form-row"><span>Год рождения</span>
+            <input id="bpYear" class="input" type="number" inputmode="numeric" placeholder="1990" value="${p.birth_year || ""}"></label>
+        </div>
+        <label class="form-row"><span>Рост, см</span>
+          <input id="bpHeight" class="input" type="text" inputmode="decimal" placeholder="165" value="${p.height_cm ? fmtNum(p.height_cm) : ""}"></label>
+        <label class="form-row"><span>Физическая активность</span>
+          <select id="bpActivity" class="input"><option value="">—</option>${ACTIVITY_LEVELS.map(a => `<option value="${a.v}" ${Number(p.activity) === a.v ? "selected" : ""}>${a.label}</option>`).join("")}</select></label>
+        <button class="btn" onclick="saveBodyProfile()">Сохранить</button>
+        <div id="bodyProfileMsg" class="msg"></div>
+      </div>
+      <div>
+        <div class="table-title">Записать вес</div>
+        <div class="form-pair">
+          <label class="form-row"><span>Дата</span><input id="wDay" class="input" type="date" value="${isoDay(new Date())}" max="${isoDay(new Date())}"></label>
+          <label class="form-row"><span>Вес, кг</span><input id="wValue" class="input" type="text" inputmode="decimal" placeholder="65,5" onkeydown="if(event.key==='Enter')saveWeight()"></label>
+        </div>
+        <button class="btn" onclick="saveWeight()">Записать</button>
+        <div id="weightMsg" class="msg"></div>
+        ${weightLog.length ? `<div class="weight-list"><table class="data-table"><tbody>${weightLog.slice().reverse().map(r => `
+          <tr><td>${fmtDate(r.day)}</td><td>${fmtNum(r.w)} кг</td><td style="text-align:right;"><button class="habit-del" title="Удалить" onclick='deleteWeight(${JSON.stringify(r.day)})'>×</button></td></tr>`).join("")}
+        </tbody></table></div>` : ""}
+      </div>
+    </div>
+    <div id="bodyResults">${results}</div>`;
+}
+
+function weightChartSvg() {
+  if (weightLog.length < 2) return "";
+  const W = 760, H = 220, pl = 46, pr = 14, pt = 16, pb = 30;
+  const ws = weightLog.map(r => r.w);
+  let lo = Math.min(...ws), hi = Math.max(...ws);
+  if (hi - lo < 2) { lo -= 1; hi += 1; }
+  const t0 = new Date(weightLog[0].day).getTime(), t1 = new Date(weightLog[weightLog.length - 1].day).getTime();
+  const x = (d) => pl + (t1 === t0 ? 0 : (new Date(d).getTime() - t0) / (t1 - t0)) * (W - pl - pr);
+  const y = (v) => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const pts = weightLog.map(r => `${x(r.day).toFixed(1)},${y(r.w).toFixed(1)}`).join(" ");
+  const ticks = [lo, (lo + hi) / 2, hi];
+  return `
+    <div class="table-title" style="margin-top:18px;">Динамика веса</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
+      ${ticks.map(t => `<line x1="${pl}" x2="${W - pr}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(244,165,130,.15)"/>
+        <text x="${pl - 8}" y="${y(t) + 4}" fill="#8C97B8" font-size="12" text-anchor="end">${fmtNum(Math.round(t * 10) / 10)}</text>`).join("")}
+      <polyline points="${pts}" fill="none" stroke="#F4A582" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${weightLog.map(r => `<circle cx="${x(r.day)}" cy="${y(r.w)}" r="4" fill="#E8826A"><title>${fmtDate(r.day)}: ${fmtNum(r.w)} кг</title></circle>`).join("")}
+      <text x="${pl}" y="${H - 8}" fill="#8C97B8" font-size="12">${fmtDate(weightLog[0].day)}</text>
+      <text x="${W - pr}" y="${H - 8}" fill="#8C97B8" font-size="12" text-anchor="end">${fmtDate(weightLog[weightLog.length - 1].day)}</text>
+    </svg>`;
+}
+
+async function saveBodyProfile() {
+  const sex = document.getElementById("bpSex").value || null;
+  const yearRaw = document.getElementById("bpYear").value;
+  const heightRaw = document.getElementById("bpHeight").value;
+  const activity = document.getElementById("bpActivity").value ? Number(document.getElementById("bpActivity").value) : null;
+  const year = yearRaw ? parseInt(yearRaw, 10) : null;
+  const height = heightRaw ? parseNum(heightRaw) : null;
+  const thisYear = new Date().getFullYear();
+  if (year !== null && (!(year >= 1920) || year > thisYear - 10)) { setMsgEl("bodyProfileMsg", "Проверьте год рождения", false); return; }
+  if (height !== null && !(height >= 100 && height <= 250)) { setMsgEl("bodyProfileMsg", "Рост укажите в сантиметрах, например 165", false); return; }
+  const row = { user_id: window.currentUserId, sex, birth_year: year, height_cm: height, activity, updated_at: new Date().toISOString() };
+  const { error } = await supabaseClient.from("body_profile").upsert(row, { onConflict: "user_id" });
+  if (error) { setMsgEl("bodyProfileMsg", "Не удалось сохранить: " + error.message, false); return; }
+  bodyProfile = row;
+  drawBodyTab();
+  setMsgEl("bodyProfileMsg", "Сохранено", true);
+}
+
+async function saveWeight() {
+  const day = document.getElementById("wDay").value;
+  const w = parseNum(document.getElementById("wValue").value);
+  if (!day) { setMsgEl("weightMsg", "Выберите дату", false); return; }
+  if (!(w >= 20 && w <= 400)) { setMsgEl("weightMsg", "Введите вес в килограммах, например 65,5", false); return; }
+  const { error } = await supabaseClient.from("weight_log").upsert({ user_id: window.currentUserId, day, weight_kg: Math.round(w * 10) / 10 }, { onConflict: "user_id,day" });
+  if (error) { setMsgEl("weightMsg", "Не удалось сохранить: " + error.message, false); return; }
+  await renderBodyTab();
+  setMsgEl("weightMsg", "Записано", true);
+}
+
+async function deleteWeight(day) {
+  if (!(await customConfirm(`Удалить запись веса за ${fmtDate(day)}?`))) return;
+  const { error } = await supabaseClient.from("weight_log").delete().eq("user_id", window.currentUserId).eq("day", day);
+  if (error) { customAlert("Не удалось удалить: " + error.message); return; }
+  await renderBodyTab();
 }
 
 /* ============================================================

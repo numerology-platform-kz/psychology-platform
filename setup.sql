@@ -281,3 +281,31 @@ grant execute on function public.manage_user_account(uuid, text) to authenticate
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.profiles, public.schools, public.access_periods, public.account_events, public.habits, public.habit_checks to authenticated;
 grant execute on function public.get_my_role(), public.get_my_teacher_id() to authenticated;
+
+-- Трекер по месяцам + вес и ИМТ
+alter table public.habits add column if not exists month text;
+update public.habits set month = to_char(created_at, 'YYYY-MM') where month is null;
+create index if not exists habits_user_month_idx on public.habits(user_id, month);
+
+create table if not exists public.body_profile (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  sex text,
+  birth_year integer,
+  height_cm numeric(5,1),
+  activity numeric(4,3),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.weight_log (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  day date not null,
+  weight_kg numeric(5,1) not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+alter table public.body_profile enable row level security;
+alter table public.weight_log enable row level security;
+drop policy if exists body_profile_own on public.body_profile;
+create policy body_profile_own on public.body_profile for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists weight_log_own on public.weight_log;
+create policy weight_log_own on public.weight_log for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on public.body_profile, public.weight_log to authenticated;
