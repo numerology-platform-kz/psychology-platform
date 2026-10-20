@@ -309,3 +309,42 @@ create policy body_profile_own on public.body_profile for all using (user_id = a
 drop policy if exists weight_log_own on public.weight_log;
 create policy weight_log_own on public.weight_log for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 grant select, insert, update, delete on public.body_profile, public.weight_log to authenticated;
+
+-- Трекер: настроение, сон, вода, благодарность / колесо баланса / челленджи
+create table if not exists public.daily_log (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  day date not null,
+  mood smallint check (mood between 1 and 5),
+  mood_note text,
+  sleep_hours numeric(3,1),
+  water_glasses smallint,
+  gratitude jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+create table if not exists public.balance_wheel (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  month text not null,
+  scores jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, month)
+);
+create table if not exists public.challenges (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  start_day date not null,
+  done jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists challenges_user_idx on public.challenges(user_id);
+alter table public.daily_log enable row level security;
+alter table public.balance_wheel enable row level security;
+alter table public.challenges enable row level security;
+drop policy if exists daily_log_own on public.daily_log;
+create policy daily_log_own on public.daily_log for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists balance_wheel_own on public.balance_wheel;
+create policy balance_wheel_own on public.balance_wheel for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists challenges_own on public.challenges;
+create policy challenges_own on public.challenges for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on public.daily_log, public.balance_wheel, public.challenges to authenticated;
