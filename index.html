@@ -299,6 +299,122 @@ select.input option { background: #0E1A3A; color: #fff; }
   .ch-day:disabled { opacity: 1; }
 }
 
+
+/* ===================== ЛИЛА ===================== */
+.lila-hero { display: flex; gap: 18px; align-items: center; }
+.lila-hero-icon { font-size: 56px; }
+.lila-hero h2 { margin: 0 0 8px; font-family: PT Serif, Georgia, serif; font-size: 30px; font-weight: 500; color: var(--cream); }
+.lila-hero p { margin: 0; color: var(--text); line-height: 1.6; max-width: 760px; }
+.lila-setup-player { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid rgba(244,165,130,.14); }
+.lila-chip { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #0A1430; font-weight: 700; font-size: 14px; border: 2px solid rgba(255,255,255,.75); box-shadow: 0 2px 6px rgba(0,0,0,.35); vertical-align: middle; }
+.lila-chip.big { width: 42px; height: 42px; min-width: 42px; font-size: 18px; }
+.lila-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.lila-layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
+.lila-board { position: relative; width: 100%; aspect-ratio: 9 / 8; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #0B1634; }
+.lila-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(8, 1fr); }
+.lila-cell { position: relative; border: 0; border-right: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07); background: color-mix(in srgb, var(--rc) 13%, #0E1A3A); color: var(--text); cursor: pointer; padding: 3px; display: flex; align-items: flex-end; justify-content: center; text-align: center; overflow: hidden; }
+.lila-cell:hover { background: color-mix(in srgb, var(--rc) 26%, #0E1A3A); }
+.lila-cell.chakra { background: color-mix(in srgb, var(--rc) 24%, #0E1A3A); }
+.lila-num { position: absolute; top: 4px; left: 6px; font-weight: 700; font-size: clamp(10px, 1.3vw, 15px); color: var(--cream); }
+.lila-mark { position: absolute; top: 3px; right: 6px; font-size: 12px; font-weight: 700; }
+.lila-mark.up { color: #F2D16B; } .lila-mark.down { color: #E8826A; }
+.lila-lotus { position: absolute; top: 50%; left: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -62%); opacity: .55; box-shadow: 0 0 14px currentColor; }
+.lila-name { position: relative; font-size: clamp(8px, .82vw, 11px); line-height: 1.12; color: #cfd6ee; padding-bottom: 2px; }
+.lila-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lila-tokens { position: absolute; inset: 0; pointer-events: none; }
+.lila-token { position: absolute; width: 28px; height: 28px; margin: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #0A1430; border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.55); transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px))); transition: left .17s ease, top .17s ease, transform .2s; z-index: 2; }
+.lila-token.jumping { transition: left .95s cubic-bezier(.45,.05,.3,1), top .95s cubic-bezier(.45,.05,.3,1); z-index: 4; }
+.lila-token.current { z-index: 3; box-shadow: 0 0 0 3px rgba(252,227,214,.55), 0 3px 10px rgba(0,0,0,.6); }
+.lila-token.waiting { opacity: .8; }
+.lila-side { border: 1px solid var(--line-soft); border-radius: 16px; background: linear-gradient(145deg, rgba(27,43,90,.85), rgba(22,36,77,.85)); padding: 16px; }
+.lila-turn { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.lila-turn-name { color: var(--cream); font-size: 20px; font-family: PT Serif, Georgia, serif; }
+.lila-dice-wrap { display: flex; align-items: center; gap: 16px; }
+.lila-roll { flex: 1; padding: 14px 10px; font-size: 16px; }
+.lila-roll:disabled { opacity: .5; cursor: wait; }
+.lila-msg { min-height: 40px; color: var(--coral); font-size: 14px; line-height: 1.4; margin-top: 12px; }
+.lila-player { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 10px; border: 1px solid transparent; }
+.lila-player.active { border-color: var(--coral); background: rgba(244,165,130,.08); }
+.lila-query { color: var(--text); font-size: 12px; font-style: italic; margin-top: 3px; line-height: 1.35; }
+.lila-log { font-size: 12px; color: var(--muted); line-height: 1.45; max-height: 220px; overflow-y: auto; }
+.lila-log div { padding: 4px 0; border-bottom: 1px solid rgba(244,165,130,.08); }
+.dice-scene { width: 60px; height: 60px; perspective: 400px; flex: 0 0 60px; }
+.dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.2,.8,.25,1); }
+.dice-face { position: absolute; inset: 0; border-radius: 12px; background: #FCE3D6; border: 1px solid #E8826A; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 8px; box-shadow: inset 0 0 8px rgba(232,130,106,.35); }
+.dice-face span { display: flex; align-items: center; justify-content: center; }
+.dice-face span.pip::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #0A1430; }
+.dice-face.f1 { transform: rotateY(0deg) translateZ(30px); }
+.dice-face.f2 { transform: rotateY(90deg) translateZ(30px); }
+.dice-face.f3 { transform: rotateX(90deg) translateZ(30px); }
+.dice-face.f4 { transform: rotateX(-90deg) translateZ(30px); }
+.dice-face.f5 { transform: rotateY(-90deg) translateZ(30px); }
+.dice-face.f6 { transform: rotateY(180deg) translateZ(30px); }
+.lila-modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(4,8,22,.72); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.lila-modal { width: 640px; max-width: 100%; max-height: 92vh; overflow-y: auto; background: linear-gradient(145deg, #1B2B5A, #16244D); border: 1px solid var(--line); border-radius: 18px; padding: 22px; color: var(--text); box-shadow: 0 20px 70px rgba(0,0,0,.5); }
+.lila-modal-player { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+.lila-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.lila-finish { background: rgba(143,227,176,.12); border: 1px solid #8fe3b0; color: #c9f5da; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 16px; }
+.lila-card-head { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.lila-card-num { width: 56px; height: 56px; min-width: 56px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; font-family: PT Serif, Georgia, serif; }
+.lila-card-row { color: var(--muted); font-size: 13px; }
+.lila-card-name { color: var(--cream); font-size: 24px; font-family: PT Serif, Georgia, serif; line-height: 1.15; }
+.lila-card-alt { color: var(--coral); font-size: 13px; margin-top: 2px; }
+.lila-card-short { color: var(--cream); font-style: italic; margin: 6px 0 10px; line-height: 1.5; }
+.lila-card-text { line-height: 1.65; font-size: 15px; }
+.lila-card-sub { color: var(--coral); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; margin: 14px 0 6px; }
+.lila-card-q { margin: 0; padding-left: 20px; line-height: 1.6; }
+.lila-info { background: rgba(244,165,130,.10); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+.lila-jump { border-radius: 12px; padding: 10px 12px; margin: 12px 0; font-size: 14px; line-height: 1.5; }
+.lila-jump.up { background: rgba(242,209,107,.12); border: 1px solid rgba(242,209,107,.55); color: #f6e3a6; }
+.lila-jump.down { background: rgba(232,130,106,.12); border: 1px solid rgba(232,130,106,.55); color: #f6c6b8; }
+.lila-rules { line-height: 1.6; padding-left: 20px; }
+.lila-rules li { margin-bottom: 6px; }
+.lila-path { display: flex; flex-wrap: wrap; gap: 6px; }
+.lila-path-step { font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line-soft); background: rgba(255,255,255,.04); }
+.lila-path-step.arrow { border-color: #F2D16B; } .lila-path-step.snake { border-color: #E8826A; }
+.lila-path-step i { color: var(--muted); font-style: normal; }
+/* Методическое пособие */
+.manual { max-width: 860px; margin: 0 auto; line-height: 1.7; color: var(--text); font-size: 15px; }
+.manual h2 { font-family: PT Serif, Georgia, serif; font-weight: 500; color: var(--cream); font-size: 26px; margin: 34px 0 12px; border-bottom: 1px solid var(--line-soft); padding-bottom: 8px; }
+.manual h3 { font-family: PT Serif, Georgia, serif; font-weight: 500; color: var(--coral); font-size: 19px; margin: 20px 0 8px; }
+.manual ul, .manual ol { padding-left: 22px; }
+.manual li { margin-bottom: 6px; }
+.man-cover { text-align: center; padding: 30px 10px 26px; border-bottom: 1px solid var(--line-soft); }
+.man-emblem { width: 110px; height: 110px; margin: 0 auto 10px; border-radius: 50%; border: 2px solid var(--coral); display: flex; align-items: center; justify-content: center; }
+.man-brand { color: var(--coral); letter-spacing: 2px; font-size: 13px; margin-bottom: 14px; }
+.man-cover h1 { font-family: PT Serif, Georgia, serif; font-weight: 500; color: var(--cream); font-size: 32px; line-height: 1.25; margin: 0 0 10px; }
+.man-cover p { color: var(--muted); margin: 0; }
+.man-row { margin-bottom: 8px; }
+.man-list { color: var(--muted); font-size: 13px; }
+.man-row-title { margin-top: 28px !important; font-size: 21px !important; }
+.man-cell { border-left: 3px solid var(--coral); padding: 2px 0 2px 16px; margin: 16px 0 22px; break-inside: avoid; }
+.man-cell h4 { margin: 0 0 4px; font-size: 18px; color: var(--cream); font-family: PT Serif, Georgia, serif; font-weight: 500; }
+.man-cell h4 span { font-size: 13px; color: var(--coral); font-family: Arial, sans-serif; }
+.man-cell p { margin: 6px 0; }
+.man-short { font-style: italic; color: var(--cream); }
+.man-sub { color: var(--coral); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; margin-top: 10px !important; }
+.man-jump { font-size: 14px; color: var(--cream); }
+.man-note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+.man-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.man-table th, .man-table td { border-bottom: 1px solid var(--line-soft); padding: 8px 6px; text-align: left; vertical-align: top; }
+.man-table th { color: var(--coral); }
+@media (max-width: 1000px) { .lila-layout { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .lila-name { display: none; }
+  .lila-num { font-size: 11px; top: 2px; left: 3px; }
+  .lila-mark { font-size: 9px; right: 3px; }
+  .lila-token { width: 18px; height: 18px; font-size: 9px; border-width: 1.5px; }
+  .lila-hero { flex-direction: column; align-items: flex-start; }
+  .lila-card-name { font-size: 20px; }
+  .man-cover h1 { font-size: 24px; }
+}
+@media print {
+  .lila-modal-overlay { display: none !important; }
+  .manual { color: #222; }
+  .man-cover { page-break-after: always; border: none; padding-top: 200px; }
+  .manual h2 { page-break-after: avoid; }
+}
+
 /* Авторизация */
 .auth-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 16px; }
 .auth-card {
@@ -386,6 +502,8 @@ select.input option { background: #0E1A3A; color: #fff; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lila-data.js?v=1"></script>
+<script src="lila.js?v=1"></script>
 <script>
 /* ============================================================
    SUPABASE — данные проекта «Psychology Platform»
@@ -598,7 +716,10 @@ async function showSection(key) {
 
 // Страница раздела. Содержимое (игры, тесты, техники, карты) будет добавляться сюда.
 const SECTION_CONTENT = {
-  games: [], tests: [], nlp: [], cbt: [], mac: []
+  games: [
+    { icon: "🪷", title: "Лила", desc: "Древняя игра самопознания: 72 клетки, путь к ответу на ваш запрос", onclick: "openLila()" }
+  ],
+  tests: [], nlp: [], cbt: [], mac: []
 };
 
 function renderSectionPage(key) {
