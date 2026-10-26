@@ -348,3 +348,32 @@ create policy balance_wheel_own on public.balance_wheel for all using (user_id =
 drop policy if exists challenges_own on public.challenges;
 create policy challenges_own on public.challenges for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 grant select, insert, update, delete on public.daily_log, public.balance_wheel, public.challenges to authenticated;
+
+-- ============================================================
+-- Игра «Путь Пробуждения»: онлайн-комнаты, чат, голосовые
+-- ============================================================
+create table if not exists public.awk_rooms (
+  id uuid primary key default gen_random_uuid(),
+  host_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null default 'Путь Пробуждения',
+  call_url text,
+  state jsonb not null default '{}'::jsonb,
+  version int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.awk_messages (
+  id bigserial primary key,
+  room_id uuid not null references public.awk_rooms(id) on delete cascade,
+  author text not null,
+  body text,
+  audio_url text,
+  created_at timestamptz not null default now()
+);
+create index if not exists awk_messages_room_idx on public.awk_messages(room_id, id);
+alter table public.awk_rooms enable row level security;
+alter table public.awk_messages enable row level security;
+create policy awk_rooms_host_all on public.awk_rooms for all to authenticated using (host_id = auth.uid()) with check (host_id = auth.uid());
+grant select, insert, update, delete on public.awk_rooms to authenticated;
+-- RPC: awk_get_room, awk_save_state, awk_set_call, awk_messages_list, awk_send (security definer; см. миграцию awk_rpcs)
+-- Storage: публичный бакет awk-voice (до 5 МБ, audio/*), загрузка для anon и authenticated
