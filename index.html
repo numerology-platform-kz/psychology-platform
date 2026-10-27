@@ -201,8 +201,8 @@ select.input option { background: #0E1A3A; color: #fff; }
 .habit-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px 24px; margin-top: 22px; }
 .hchart .table-title { margin-bottom: 8px; }
 .habit-title-wrap { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.leaf-branch { flex-shrink: 0; }
-@media (max-width: 600px) { .leaf-branch { display: none; } }
+.month-butterflies { flex-shrink: 0; }
+@media (max-width: 600px) { .month-butterflies { display: none; } }
 .habit-month { text-align: center; font-family: PT Serif, Georgia, serif; color: var(--cream); line-height: 1.1; }
 .habit-month div { font-size: 30px; letter-spacing: 2px; }
 .habit-month span { color: var(--coral); letter-spacing: 4px; font-size: 15px; }
@@ -211,6 +211,8 @@ select.input option { background: #0E1A3A; color: #fff; }
 .hint-chip small { color: var(--muted); }
 .hint-chip:hover { border-color: var(--coral); }
 .hint-chip.sel { border-color: var(--coral); background: rgba(244,165,130,.2); color: #fff; }
+.scope-group td { color: var(--cream); font-weight: 600; background: rgba(244,165,130,.06); }
+.scope-sub td:first-child { padding-left: 22px; }
 .habit-del { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 4px; }
 .habit-del:hover { color: var(--bad); }
 .habit-add { display: flex; gap: 10px; margin-top: 16px; max-width: 560px; }
@@ -325,7 +327,7 @@ select.input option { background: #0E1A3A; color: #fff; }
   .mcell.done { background: #E8826A !important; }
   .mcell:disabled { opacity: 1; }
   .month-table .mt-num { position: static; background: #fff !important; color: #555 !important; }
-  .habit-head { margin-bottom: 4px; } .habit-month div { font-size: 22px; color: #1B2B5A; } .habit-month span { color: #E8826A; }
+  .habit-head { margin-bottom: 4px; display: flex !important; justify-content: center; } .habit-month div { font-size: 22px; color: #1B2B5A; } .habit-month span { color: #E8826A; }
   .mcell.val.has { background: #eef4fb !important; color: #222 !important; }
   /* Красивая таблица привычек: один альбомный лист */
   .print-landscape .print-title { font-size: 11px; color: #8a7a72; margin: 0 0 2px; text-align: right; }
@@ -357,7 +359,7 @@ select.input option { background: #0E1A3A; color: #fff; }
   .hchart { display: inline-block; vertical-align: top; width: 48.5%; margin: 0 1% 5mm 0; break-inside: avoid; border: 1.5px solid #EBD3C6; border-radius: 10px; padding: 4mm; background: #FFFCFA !important; box-sizing: border-box; }
   .hchart svg { width: 100%; height: auto; }
   .habit-charts:empty { display: none; }
-  .habit-title-wrap { gap: 4px; } .leaf-branch { display: block !important; width: 70px; height: 32px; }
+  .habit-title-wrap { gap: 4px; } .month-butterflies { display: block !important; width: 100px; height: 45px; }
   .ch-day:disabled { opacity: 1; }
 }
 
@@ -604,6 +606,21 @@ const SECTIONS = [
   { key: "tracker", icon: "✅", title: "Трекер привычек",         desc: "Отмечайте привычки каждый день и следите за прогрессом" }
 ];
 const SECTION_BY_KEY = Object.fromEntries(SECTIONS.map(s => [s.key, s]));
+// Подразделы, на которые доступ выдаётся отдельно: у каждого своя галочка «Ярлык виден» и «Доступ».
+// Когда появятся техники НЛП, тесты и т.д. — добавить их сюда, например nlp: [{ key: "nlp.xxx", ... }]
+const SECTION_ITEMS = {
+  games: [
+    { key: "games.lila",      icon: "🪷", title: "Лила" },
+    { key: "games.awakening", icon: "🌸", title: "Путь Пробуждения" }
+  ]
+};
+const ITEM_BY_KEY = Object.fromEntries(Object.values(SECTION_ITEMS).flat().map(i => [i.key, i]));
+// Запись доступа для раздела или подраздела. Старые доступы «на весь раздел» действуют на все его подразделы
+function scopeItem(scope, key) {
+  scope = scope || {};
+  if (key in scope) return scope[key];
+  return key.includes(".") ? scope[key.split(".")[0]] : undefined;
+}
 
 /* ============================================================
    ПРАВА ПОЛЬЗОВАТЕЛЯ
@@ -632,12 +649,15 @@ function itemGrantActive(item) {
 }
 function hasGrant(key) {
   if (isAdmin()) return true;
-  return itemGrantActive((window.currentUserGrant || {})[key]);
+  const g = window.currentUserGrant || {};
+  if (SECTION_ITEMS[key]) return SECTION_ITEMS[key].some(i => itemGrantActive(scopeItem(g, i.key)));
+  return itemGrantActive(scopeItem(g, key));
 }
 // Ярлык раздела виден, только если в доступе стоит галочка «Ярлык виден». Администратор видит всё.
 function isSectionVisible(key) {
   if (isAdmin()) return true;
-  const item = (window.currentUserGrant || {})[key];
+  if (SECTION_ITEMS[key]) return SECTION_ITEMS[key].some(i => isSectionVisible(i.key));
+  const item = scopeItem(window.currentUserGrant, key);
   return !!(item && (item.visible === true || itemGrantActive(item)));
 }
 function canOpenAccessManagement() {
@@ -744,7 +764,7 @@ function showHome() {
 }
 
 function renderLockedSection(key) {
-  const s = SECTION_BY_KEY[key] || { title: "Раздел платформы" };
+  const s = SECTION_BY_KEY[key] || ITEM_BY_KEY[key] || { title: "Раздел платформы" };
   const meta = window.currentUserAccessMeta || {};
   const expired = meta.isExpired && meta.endsAt;
   contentEl().innerHTML = `
@@ -756,7 +776,7 @@ function renderLockedSection(key) {
       <div class="table-card">
         <div class="access-locked">
           <div class="access-locked-icon">🔒</div>
-          <h2>${expired ? "Срок доступа истёк" : "У вас нет доступа к этому разделу"}</h2>
+          <h2>${expired ? "Срок доступа истёк" : (ITEM_BY_KEY[key] ? "У вас нет доступа к этой игре" : "У вас нет доступа к этому разделу")}</h2>
           <p>${expired
             ? "Доступ закончился " + fmtDate(meta.endsAt) + ". Чтобы продлить, обратитесь к администратору или своему учителю."
             : "Чтобы открыть раздел, администратор или учитель должен выдать вам доступ."}</p>
@@ -782,8 +802,8 @@ async function showSection(key) {
 // Страница раздела. Содержимое (игры, тесты, техники, карты) будет добавляться сюда.
 const SECTION_CONTENT = {
   games: [
-    { icon: "🪷", title: "Лила", desc: "Древняя игра самопознания: 72 клетки, путь к ответу на ваш запрос", onclick: "openLila()" },
-    { icon: "🌸", title: "Путь Пробуждения", desc: "Онлайн-игра по 7 чакрам и 14 сферам жизни: общая комната, чат с голосовыми и видеозвонок", onclick: "openAwakening()" },
+    { icon: "🪷", title: "Лила", desc: "Древняя игра самопознания: 72 клетки, путь к ответу на ваш запрос", onclick: "openLila()", access: "games.lila" },
+    { icon: "🌸", title: "Путь Пробуждения", desc: "Онлайн-игра по 7 чакрам и 14 сферам жизни: общая комната, чат с голосовыми и видеозвонок", onclick: "openAwakening()", access: "games.awakening" },
     { icon: "📁", title: "Архив чатов", desc: "Переписка игроков из игровых комнат: прочитать и скачать в PDF", onclick: "openChatArchive()", show: () => awkCanArchive() }
   ],
   tests: [], nlp: [], cbt: [], mac: []
@@ -791,19 +811,21 @@ const SECTION_CONTENT = {
 
 function renderSectionPage(key) {
   const s = SECTION_BY_KEY[key];
-  const items = (SECTION_CONTENT[key] || []).filter(it => !it.show || it.show());
+  const items = (SECTION_CONTENT[key] || []).filter(it => (!it.show || it.show()) && (!it.access || isSectionVisible(it.access)));
   contentEl().innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
         <div><h2>${s.icon} ${escapeHtml(s.title)}</h2><p>${escapeHtml(s.desc)}</p></div>
       </div>
       ${items.length
-        ? `<div class="cards">${items.map(it => `
-            <div class="card" onclick="${it.onclick || ""}" role="button" tabindex="0">
+        ? `<div class="cards">${items.map(it => {
+            const open = !it.access || hasGrant(it.access);
+            return `<div class="card${open ? "" : " locked"}" onclick="${open ? (it.onclick || "") : `renderLockedSection('${it.access}')`}" role="button" tabindex="0">
               <div class="card-icon">${it.icon || s.icon}</div>
               <h3>${escapeHtml(it.title)}</h3>
               <p>${escapeHtml(it.desc || "")}</p>
-            </div>`).join("")}</div>`
+              ${open ? "" : `<div class="lock-note">🔒 Доступ закрыт</div>`}
+            </div>`; }).join("")}</div>`
         : `<div class="table-card"><div class="empty-table">Материалы раздела появятся здесь совсем скоро</div></div>`}
     </div>`;
 }
@@ -947,11 +969,23 @@ function dayBarsSvg(days, values, opts) {
 
 const HABIT_ROWS = 19;
 let trackerExtraRows = 0; // строки, добавленные кнопкой «Добавить ещё строку»
-function leafBranchSvg(flip) {
-  const leaves = [[14, 22, -35], [26, 15, -20], [38, 10, -8], [50, 7, 6], [62, 6, 18], [24, 31, 30], [36, 28, 40], [48, 24, 48]];
-  return `<svg class="leaf-branch" width="86" height="40" viewBox="0 0 86 40" aria-hidden="true" style="${flip ? "transform:scaleX(-1);" : ""}">
-    <path d="M4 34 C24 26 46 14 82 6" stroke="#8FB3A8" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-    ${leaves.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="7" ry="3" fill="#A9C9BE" fill-opacity=".85" transform="rotate(${r} ${x} ${y})"/>`).join("")}
+function butterflyShape(x, y, size, rot, c1, c2) {
+  const k = size / 44;
+  return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${k}) translate(-22 -22)">
+    <path d="M22 14 C15 5 6 9 8.5 18 C10 23.5 16 23.5 22 22 Z" fill="${c1}"/>
+    <path d="M22 14 C29 5 38 9 35.5 18 C34 23.5 28 23.5 22 22 Z" fill="${c1}"/>
+    <path d="M22 22 C16 23 11.5 27.5 13.5 32.5 C15.5 36 20 31.5 22 26 Z" fill="${c2}"/>
+    <path d="M22 22 C28 23 32.5 27.5 30.5 32.5 C28.5 36 24 31.5 22 26 Z" fill="${c2}"/>
+    <path d="M22 13 L22 31" stroke="#FCE3D6" stroke-width="1.6" stroke-linecap="round"/>
+  </g>`;
+}
+// Украшение у названия месяца: бабочки — символ платформы
+function butterflyDecorSvg(flip) {
+  return `<svg class="month-butterflies" width="130" height="58" viewBox="0 0 130 58" aria-hidden="true" style="${flip ? "transform:scaleX(-1);" : ""}">
+    <path d="M6 46 C26 54 44 30 66 35 S96 44 108 28" stroke="#F4A582" stroke-opacity=".6" stroke-width="1.4" fill="none" stroke-dasharray="2 4" stroke-linecap="round"/>
+    ${butterflyShape(110, 22, 38, 18, "#F4A582", "#E8826A")}
+    ${butterflyShape(58, 28, 22, -14, "#C49BF0", "#A77BE8")}
+    ${butterflyShape(20, 40, 15, -24, "#9CC3F0", "#7FA7E8")}
   </svg>`;
 }
 function addHabitRow() { trackerExtraRows = Math.min(trackerExtraRows + 1, 21); redrawTrackerKeepScroll(); }
@@ -1088,7 +1122,7 @@ function drawTracker() {
     ${printTitleHtml("Трекер привычек")}
     <div class="habit-head">
       <button class="month-pill no-print" onclick="changeTrackerMonth(-1)">‹ ${mPrev}</button>
-      <div class="habit-title-wrap">${leafBranchSvg(false)}<div class="habit-month"><div>${MONTHS[trackerMonth.getMonth()].toUpperCase()}</div><span>${trackerMonth.getFullYear()}</span></div>${leafBranchSvg(true)}</div>
+      <div class="habit-title-wrap">${butterflyDecorSvg(false)}<div class="habit-month"><div>${MONTHS[trackerMonth.getMonth()].toUpperCase()}</div><span>${trackerMonth.getFullYear()}</span></div>${butterflyDecorSvg(true)}</div>
       <button class="month-pill no-print" onclick="changeTrackerMonth(1)">${mNext} ›</button>
     </div>
     <div class="tracker-toolbar no-print" style="justify-content:flex-end;">
@@ -1729,6 +1763,15 @@ function setMsgEl(id, text, ok) {
   if (el) { el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
 }
 
+function scopeRowHtml(s, sub) {
+  return `<tr${sub ? ` class="scope-sub"` : ""}>
+    <td>${sub ? `<span style="color:var(--muted);margin-right:6px;">└</span>` : ""}${s.icon} ${escapeHtml(s.title)}</td>
+    <td><label class="check-label"><input type="checkbox" class="scope-visible" data-key="${s.key}"> виден</label></td>
+    <td><label class="check-label"><input type="checkbox" class="scope-cell" data-key="${s.key}"> открыт</label></td>
+    <td>${termSelectHtml(`data-term="${s.key}"`)}</td>
+  </tr>`;
+}
+
 async function renderAccess() {
   const box = contentEl();
   if (!canOpenAccessManagement()) { await renderMyAccess(); return; }
@@ -1774,13 +1817,9 @@ async function renderAccess() {
           <table class="data-table">
             <thead><tr><th>Раздел</th><th>Ярлык виден</th><th>Доступ</th><th>Срок</th></tr></thead>
             <tbody>
-              ${grantRows.map(s => `
-                <tr>
-                  <td>${s.icon} ${escapeHtml(s.title)}</td>
-                  <td><label class="check-label"><input type="checkbox" class="scope-visible" data-key="${s.key}"> виден</label></td>
-                  <td><label class="check-label"><input type="checkbox" class="scope-cell" data-key="${s.key}"> открыт</label></td>
-                  <td>${termSelectHtml(`data-term="${s.key}"`)}</td>
-                </tr>`).join("")}
+              ${grantRows.map(s => SECTION_ITEMS[s.key] ? `
+                <tr class="scope-group"><td colspan="4">${s.icon} ${escapeHtml(s.title)} <span style="color:var(--muted);font-size:13px;">— доступ к каждой игре отдельно</span></td></tr>
+                ${SECTION_ITEMS[s.key].filter(i => isSectionVisible(i.key)).map(i => scopeRowHtml(i, true)).join("")}` : scopeRowHtml(s, false)).join("")}
               ${admin ? `
                 <tr>
                   <td>🔑 Доступ (управление учениками, для учителей)</td>
@@ -1876,7 +1915,9 @@ async function renderMyAccess() {
 
     const scope = latest?.granted_scope || {};
     const rows = SECTIONS.filter(s => isSectionVisible(s.key))
-      .map(s => `<tr><td>${s.icon} ${escapeHtml(s.title)}</td><td>${itemStatusHtml(scope[s.key])}</td></tr>`).join("");
+      .map(s => SECTION_ITEMS[s.key]
+        ? SECTION_ITEMS[s.key].filter(i => isSectionVisible(i.key)).map(i => `<tr><td>${s.icon} ${escapeHtml(s.title)} · ${i.icon} ${escapeHtml(i.title)}</td><td>${itemStatusHtml(scopeItem(scope, i.key))}</td></tr>`).join("")
+        : `<tr><td>${s.icon} ${escapeHtml(s.title)}</td><td>${itemStatusHtml(scope[s.key])}</td></tr>`).join("");
     document.getElementById("myAccessTable").innerHTML = latest && rows
       ? `<table class="data-table"><thead><tr><th>Раздел</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table>`
       : `<div class="empty-table">Доступ пока не выдан.<br>Обратитесь к администратору или учителю</div>`;
@@ -2139,7 +2180,7 @@ async function loadScopeForSelectedUser() {
   const scope = ((data || []).filter(hasActivePlatformAccess)[0] || {}).granted_scope || {};
   window.loadedScope = scope;
   document.querySelectorAll(".scope-cell").forEach(el => {
-    const item = scope[el.dataset.key];
+    const item = scopeItem(scope, el.dataset.key);
     el.checked = !!(item && item.granted);
     const term = document.querySelector(`[data-term="${el.dataset.key}"]`);
     if (term && item && item.granted) {
@@ -2152,7 +2193,7 @@ async function loadScopeForSelectedUser() {
     }
   });
   document.querySelectorAll(".scope-visible").forEach(el => {
-    const item = scope[el.dataset.key];
+    const item = scopeItem(scope, el.dataset.key);
     el.checked = !!(item && item.visible === true);
   });
   if (all) all.checked = Array.from(document.querySelectorAll(".scope-cell, .scope-visible")).every(el => el.checked);
@@ -2165,11 +2206,17 @@ function collectScope() {
     const key = el.dataset.key;
     const term = document.querySelector(`[data-term="${key}"]`)?.value || "unlimited";
     scope[key] = el.checked ? Object.assign({ granted: true }, computeEndsAt(term)) : { granted: false };
-    if (!el.checked && window.loadedScope?.[key]?.visible) scope[key].visible = true;
+    if (!el.checked && scopeItem(window.loadedScope, key)?.visible) scope[key].visible = true;
   });
   document.querySelectorAll(".scope-visible").forEach(el => {
     scope[el.dataset.key] = scope[el.dataset.key] || { granted: false };
     scope[el.dataset.key].visible = el.checked;
+  });
+  // Старый доступ «на весь раздел» переносим на каждый подраздел и убираем
+  Object.entries(SECTION_ITEMS).forEach(([sec, items]) => {
+    if (!(sec in scope)) return;
+    items.forEach(i => { if (!(i.key in scope)) scope[i.key] = JSON.parse(JSON.stringify(scope[sec])); });
+    delete scope[sec];
   });
   return scope;
 }
