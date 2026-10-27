@@ -4,9 +4,21 @@
    Зависит от awakening-data.js и общих функций index.html
    ============================================================ */
 
-function awkRoomLink(id) {
+const AWK_GAMES = {
+  awakening: { title: "Путь Пробуждения", page: "awakening-room.html" },
+  lila: { title: "Лила", page: "lila-room.html" }
+};
+function awkRoomLink(id, game) {
   const base = location.href.split("#")[0].split("?")[0].replace(/[^/]*$/, "");
-  return base + "awakening-room.html?room=" + id;
+  return base + (AWK_GAMES[game] || AWK_GAMES.awakening).page + "?room=" + id;
+}
+function awkCanArchive() { return ["admin", "teacher"].includes(window.currentUserRole); }
+
+// Блок «Мои игровые комнаты» для страницы игры
+function awkRoomsBlock(game) {
+  return `<div class="table-card" style="margin-top:20px;">
+    <h3 style="margin:0 0 10px;color:var(--coral);font-family:'PT Serif',serif;font-weight:500;">Мои игровые комнаты</h3>
+    <div id="awkRooms" class="empty-table" data-game="${game}">Загрузка…</div></div>`;
 }
 
 async function openAwakening() {
@@ -27,25 +39,23 @@ async function openAwakening() {
           <h3>Методическое пособие</h3>
           <p>Правила, чакры, сферы, проведение игры и все 98 карточек</p>
         </div>
-        <div class="card" onclick="awkCreateRoom()" role="button" tabindex="0">
+        <div class="card" onclick="awkCreateRoom('awakening')" role="button" tabindex="0">
           <div class="card-icon">🎲</div>
           <h3>Запустить игру</h3>
           <p>Создайте игровую комнату и отправьте игрокам ссылку-приглашение</p>
         </div>
       </div>
-      <div class="table-card" style="margin-top:20px;">
-        <h3 style="margin:0 0 10px;color:var(--coral);font-family:'PT Serif',serif;font-weight:500;">Мои игровые комнаты</h3>
-        <div id="awkRooms" class="empty-table">Загрузка…</div>
-      </div>
+      ${awkRoomsBlock("awakening")}
     </div>`;
-  awkLoadRooms();
+  awkLoadRooms("awakening");
 }
 
-async function awkLoadRooms() {
+async function awkLoadRooms(game) {
   const el = document.getElementById("awkRooms"); if (!el) return;
-  const { data, error } = await supabaseClient.from("awk_rooms").select("id,title,state,created_at").order("created_at", { ascending: false }).limit(50);
+  const { data, error } = await supabaseClient.from("awk_rooms").select("id,game,title,state,created_at")
+    .eq("host_id", window.currentUserId).eq("game", game).order("created_at", { ascending: false }).limit(50);
   if (error) { el.textContent = "Не удалось загрузить комнаты"; return; }
-  if (!data.length) { el.textContent = "Комнат пока нет. Нажмите «Запустить игру», чтобы создать первую"; return; }
+  if (!data.length) { el.textContent = "Комнат пока нет. Создайте комнату для онлайн-игры — она появится здесь"; return; }
   el.className = "";
   const statusText = { lobby: "ожидание игроков", playing: "идёт игра", over: "завершена" };
   el.innerHTML = data.map(r => {
@@ -55,33 +65,88 @@ async function awkLoadRooms() {
         <div style="color:var(--cream);">${escapeHtml(r.title)} · ${fmtDate(r.created_at.slice(0, 10))}</div>
         <div style="color:var(--muted);font-size:13px;">${statusText[s.status || "lobby"]}${players ? " · " + escapeHtml(players) : ""}</div>
       </div>
-      <button class="btn btn-small" onclick="window.open('${awkRoomLink(r.id)}','_blank')">Открыть</button>
-      <button class="btn btn-ghost btn-small" onclick="awkCopyLink('${r.id}')">🔗 Ссылка</button>
-      <button class="btn btn-ghost btn-small" onclick="awkDeleteRoom('${r.id}')">Удалить</button>
+      <button class="btn btn-small" onclick="window.open('${awkRoomLink(r.id, r.game)}','_blank')">Открыть</button>
+      <button class="btn btn-ghost btn-small" onclick="awkCopyLink('${r.id}','${r.game}')">🔗 Ссылка</button>
+      ${awkCanArchive() ? `<button class="btn btn-ghost btn-small" onclick="awkExportChat('${r.id}')">⬇ Чат</button>` : ""}
+      <button class="btn btn-ghost btn-small" onclick="awkDeleteRoom('${r.id}','${r.game}')">Удалить</button>
     </div>`;
   }).join("");
 }
 
-async function awkCreateRoom() {
-  const { data, error } = await supabaseClient.from("awk_rooms").insert({ title: "Путь Пробуждения", state: { status: "lobby", players: [], log: [], turn: 0, seq: 0 } }).select("id").single();
-  if (error) { customAlert ? customAlert("Не удалось создать комнату: " + error.message) : alert(error.message); return; }
-  window.open(awkRoomLink(data.id), "_blank");
-  awkLoadRooms();
+async function awkCreateRoom(game) {
+  const win = window.open("", "_blank");
+  const { data, error } = await supabaseClient.from("awk_rooms").insert({ game, title: AWK_GAMES[game].title, state: { status: "lobby", players: [], log: [], turn: 0, seq: 0 } }).select("id").single();
+  if (error) { if (win) win.close(); customAlert("Не удалось создать комнату: " + error.message); return; }
+  const link = awkRoomLink(data.id, game);
+  if (win) win.location.href = link; else window.open(link, "_blank");
+  awkLoadRooms(game);
 }
 
-function awkCopyLink(id) {
-  const link = awkRoomLink(id);
+function awkCopyLink(id, game) {
+  const link = awkRoomLink(id, game);
   (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(
-    () => customAlert ? customAlert("Ссылка скопирована. Отправьте её игрокам") : alert("Ссылка скопирована"),
+    () => customAlert("Ссылка скопирована. Отправьте её игрокам"),
     () => prompt("Скопируйте ссылку:", link));
 }
 
-function awkDeleteRoom(id) {
+function awkDeleteRoom(id, game) {
   customConfirm("Удалить комнату вместе с перепиской?").then(async ok => {
     if (!ok) return;
     await supabaseClient.from("awk_rooms").delete().eq("id", id);
-    awkLoadRooms();
+    if (document.getElementById("awkArchive")) awkLoadArchive(); else awkLoadRooms(game);
   });
+}
+
+/* ============================================================
+   АРХИВ ЧАТОВ — только администратор и учителя
+   Администратор видит все игры, учитель — свои и игры своих учеников
+   ============================================================ */
+async function awkExportChat(roomId) {
+  const [{ data: r }, { data: msgs, error }] = await Promise.all([
+    supabaseClient.from("awk_rooms").select("id,game,title,state,created_at").eq("id", roomId).single(),
+    supabaseClient.from("awk_messages").select("id,author,body,audio_url,image_url,created_at,deleted").eq("room_id", roomId).order("id")
+  ]);
+  if (error || !r) { customAlert("Не удалось загрузить чат"); return; }
+  const players = ((r.state || {}).players || []).map(p => p.name).join(", ");
+  RoomChat.exportPdf(`${(AWK_GAMES[r.game] || {}).title || r.title} — чат игры`, msgs || [],
+    `Игра от ${fmtDate(r.created_at.slice(0, 10))}${players ? " · игроки: " + players : ""}`);
+}
+
+function openChatArchive() {
+  if (!awkCanArchive()) { showSection("games"); return; }
+  showWelcome(false);
+  contentEl().innerHTML = `
+    <div class="dashboard-wrap">
+      <button class="btn btn-ghost btn-small" style="margin-bottom:16px;" onclick="showSection('games')">← Все игры</button>
+      <div class="dashboard-head"><div><h2>📁 Архив чатов</h2>
+        <p>${isAdmin() ? "Переписка всех игровых комнат платформы" : "Переписка ваших игр и игр ваших учеников"}. Скачать чат могут только администратор и учителя</p></div></div>
+      <div class="table-card"><div id="awkArchive" class="empty-table">Загрузка…</div></div>
+    </div>`;
+  awkLoadArchive();
+}
+
+async function awkLoadArchive() {
+  const el = document.getElementById("awkArchive"); if (!el) return;
+  const { data, error } = await supabaseClient.from("awk_rooms").select("id,game,title,state,created_at,host_id").order("created_at", { ascending: false }).limit(300);
+  if (error) { el.textContent = "Не удалось загрузить архив"; return; }
+  if (!data.length) { el.textContent = "Игровых комнат пока нет"; return; }
+  const ids = [...new Set(data.map(r => r.host_id))];
+  const { data: profs } = await supabaseClient.from("profiles").select("id,first_name,last_name,role").in("id", ids);
+  const pmap = Object.fromEntries((profs || []).map(p => [p.id, p]));
+  const roleName = { admin: "администратор", teacher: "учитель", student: "ученик" };
+  el.className = "";
+  el.innerHTML = data.map(r => {
+    const s = r.state || {}, players = (s.players || []).map(p => p.name).join(", "), h = pmap[r.host_id];
+    const host = h ? `${[h.first_name, h.last_name].filter(Boolean).join(" ")} (${roleName[h.role] || h.role})` : "—";
+    return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line-soft);">
+      <div style="flex:1;min-width:220px;">
+        <div style="color:var(--cream);">${escapeHtml((AWK_GAMES[r.game] || {}).title || r.title)} · ${fmtDate(r.created_at.slice(0, 10))}</div>
+        <div style="color:var(--muted);font-size:13px;">Ведущий: ${escapeHtml(host)}${players ? " · игроки: " + escapeHtml(players) : ""}</div>
+      </div>
+      <button class="btn btn-small" onclick="awkExportChat('${r.id}')">⬇ Скачать чат (PDF)</button>
+      <button class="btn btn-ghost btn-small" onclick="window.open('${awkRoomLink(r.id, r.game)}','_blank')">Открыть</button>
+    </div>`;
+  }).join("");
 }
 
 /* ============================================================
@@ -171,7 +236,8 @@ function awakeningManualHtml() {
       <li>Нажмите «Пригласить игроков» и отправьте ссылку игрокам в мессенджер. Игрокам не нужна регистрация: они открывают ссылку, вписывают имя и запрос и нажимают «Присоединиться»</li>
       <li>Если игрок не может зайти сам, ведущий добавляет его вручную: «Добавить игрока вручную»</li>
       <li>Для видеосвязи создайте звонок в Zoom или Google Meet и нажмите «Добавить ссылку на звонок» — у всех игроков появится кнопка «Войти в звонок»</li>
-      <li>В комнате есть общий чат: можно писать сообщения и отправлять голосовые (кнопка 🎤 — нажать, чтобы начать запись, и нажать ещё раз, чтобы отправить). Если видео плохое, общайтесь через чат</li>
+      <li>В комнате есть общий чат: сообщения, фото 📷 и голосовые 🎤. Голосовое записывается, после остановки его можно прослушать и нажать «Отправить» или «Удалить». Своё отправленное сообщение можно удалить в течение 5 минут. Если видео плохое, общайтесь через чат</li>
+      <li>Переписка сохраняется. Администратор и учителя могут скачать чат в PDF — в комнате или в папке «Архив чатов» раздела «Трансформационные игры». У игроков кнопки скачивания нет</li>
       <li>Когда все в сборе, нажмите «Начать игру». Игроки ходят по очереди: бросает кубик тот, чей ход. Ведущий может бросить кубик за любого игрока</li>
       <li>Карточка клетки открывается у всех участников одновременно. На клетке «Страх» игрок или ведущий выбирает: «Страх проработан — остаюсь» или «Спуститься на чакру ниже»</li>
       <li>Нажмите на любую клетку поля, чтобы прочитать её карточку. «Путь игроков» показывает все пройденные клетки, итоги можно скачать в PDF</li>

@@ -57,20 +57,6 @@ h1, h2, h3 { font-family: "PT Serif", Georgia, serif; font-weight: 400; color: v
 .player .pinfo { font-size: 12px; margin-top: 4px; }
 .player .x { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; }
 .form-row { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.chat { display: flex; flex-direction: column; height: 460px; }
-.chat-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
-.cmsg { background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; }
-.cmsg.mine { background: rgba(244,165,130,.14); align-self: flex-end; }
-.cmsg .who { font-size: 12px; color: var(--coral); font-weight: 700; }
-.cmsg .when { font-size: 11px; color: var(--muted); margin-left: 6px; font-weight: 400; }
-.cmsg .body { white-space: pre-wrap; word-wrap: break-word; margin-top: 2px; font-size: 14px; }
-.cmsg audio { width: 230px; max-width: 100%; margin-top: 4px; height: 36px; }
-.chat-input { display: flex; gap: 6px; margin-top: 10px; align-items: flex-end; }
-.chat-input textarea { resize: none; height: 44px; }
-.mic { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; padding: 0; font-size: 18px; }
-.mic.rec { background: #E0474C; color: #fff; animation: pulse 1s infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(224,71,76,.25); } }
-.rec-time { font-size: 12px; color: var(--bad); min-height: 16px; margin-top: 4px; }
 .log { max-height: 220px; overflow-y: auto; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
 .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 5px; }
@@ -89,7 +75,6 @@ h1, h2, h3 { font-family: "PT Serif", Georgia, serif; font-weight: 400; color: v
 .print-area { display: none; }
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }
-  .chat { height: 420px; }
 }
 @media print {
   @page { size: A4; margin: 14mm; }
@@ -107,6 +92,7 @@ h1, h2, h3 { font-family: "PT Serif", Georgia, serif; font-weight: 400; color: v
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="awakening-data.js?v=1"></script>
+<script src="room-chat.js?v=1"></script>
 <script>
 const SUPABASE_URL = "https://kfsyeejdwrcmwqacmigb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4osUqgFDEHZ99UhULjHLIQ_M1vYSDe0";
@@ -119,11 +105,8 @@ const NS = AWK_SPHERES.length;
 
 let room = null;          // {id,title,call_url,state,version,is_host}
 let me = null;            // {pid?, name}
-let messages = [];
-let lastMsgId = 0;
 let channel = null;
 let busy = false;
-let rec = null;
 
 /* ---------- утилиты ---------- */
 function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -192,14 +175,7 @@ async function refresh() {
   if (changed) { render(); checkCard(); }
 }
 
-async function loadMessages() {
-  const { data } = await sb.rpc("awk_messages_list", { p_room: ROOM, p_after: lastMsgId });
-  if (data && data.length) {
-    messages = messages.concat(data);
-    lastMsgId = data[data.length - 1].id;
-    renderChat(true);
-  }
-}
+function loadMessages() { return RoomChat.load(); }
 
 /* ---------- логика игры ---------- */
 function addLog(s, text) { s.log.push({ t: Date.now(), text }); if (s.log.length > 200) s.log = s.log.slice(-200); }
@@ -427,16 +403,13 @@ function tokensSvg() {
 function render() {
   if (!room) return;
   const keep = {};
-  ["chatText", "jName", "jQuery", "hName", "hQuery"].forEach(id => { const el = $(id); if (el) keep[id] = el.value; });
+  ["jName", "jQuery", "hName", "hQuery"].forEach(id => { const el = $(id); if (el) keep[id] = el.value; });
   const focusId = document.activeElement && document.activeElement.id;
   const detOpen = !!document.querySelector("details[open]");
-  const chatEl = $("chatList"); const chatScroll = chatEl ? chatEl.scrollTop : null;
   renderInner();
   Object.entries(keep).forEach(([id, v]) => { const el = $(id); if (el) el.value = v; });
   if (detOpen) { const d = document.querySelector("details"); if (d) d.open = true; }
   if (focusId && $(focusId)) $(focusId).focus();
-  if (chatScroll !== null && $("chatList")) $("chatList").scrollTop = chatScroll;
-  if (rec && $("micBtn")) $("micBtn").classList.add("rec");
 }
 function renderInner() {
   const s = st();
@@ -463,17 +436,13 @@ function renderInner() {
       <div class="side">
         <div class="panel" id="controls"></div>
         <div class="panel"><h3>Игроки</h3><div class="players" id="players"></div>${joinBlock(joined)}${hostAddBlock()}</div>
-        <div class="panel chat"><h3>Чат игры</h3><div class="chat-list" id="chatList"></div>
-          ${joined ? `<div class="chat-input">
-            <textarea id="chatText" class="input" maxlength="2000" placeholder="Сообщение…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendText();}"></textarea>
-            <button class="btn mic" id="micBtn" title="Голосовое сообщение" onclick="toggleRec()">🎤</button>
-            <button class="btn mic" title="Отправить" onclick="sendText()">➤</button>
-          </div><div class="rec-time" id="recTime"></div>` : `<p class="msg-line">Впишите имя выше, чтобы писать в чат</p>`}
-        </div>
+        <div id="chatSlot"></div>
         <div class="panel"><h3>Ход игры</h3><div class="log" id="log"></div></div>
       </div>
     </div>`;
-  renderPlayers(); renderControls(); renderChat(false); renderLog();
+  renderPlayers(); renderControls(); renderLog();
+  RoomChat.setCanWrite(!!joined);
+  $("chatSlot").replaceWith(RoomChat.el);
 }
 
 function joinBlock(joined) {
@@ -536,19 +505,6 @@ function renderControls() {
 function renderLog() {
   const el = $("log"); if (!el) return;
   el.innerHTML = st().log.slice().reverse().map(l => `<div>${esc(l.text)}</div>`).join("") || "<div>Здесь появится история ходов</div>";
-}
-
-function renderChat(scroll) {
-  const el = $("chatList"); if (!el) return;
-  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
-  const mine = myName();
-  el.innerHTML = messages.length ? messages.map(m => `
-    <div class="cmsg${m.author === mine ? " mine" : ""}">
-      <div class="who">${esc(m.author)}<span class="when">${timeStr(m.created_at)}</span></div>
-      ${m.body ? `<div class="body">${esc(m.body)}</div>` : ""}
-      ${m.audio_url ? `<audio controls preload="none" src="${esc(m.audio_url)}"></audio>` : ""}
-    </div>`).join("") : `<p class="msg-line" style="margin:0;">Сообщений пока нет. Пишите или отправляйте голосовые 🎤</p>`;
-  if (!scroll || atBottom) el.scrollTop = el.scrollHeight;
 }
 
 /* ---------- карточки ---------- */
@@ -647,54 +603,6 @@ function printSummary() {
   window.print(); setTimeout(() => { document.title = old; }, 1000);
 }
 
-/* ---------- чат ---------- */
-async function sendText() {
-  const t = $("chatText"); const body = t.value.trim(); if (!body) return;
-  t.value = "";
-  const { data, error } = await sb.rpc("awk_send", { p_room: ROOM, p_author: myName(), p_body: body, p_audio: null });
-  if (error) { toast("Не удалось отправить"); t.value = body; return; }
-  channel && channel.send({ type: "broadcast", event: "msg", payload: {} });
-  await loadMessages();
-}
-
-async function toggleRec() {
-  if (rec) { rec.stop(); return; }
-  if (!navigator.mediaDevices || !window.MediaRecorder) { toast("Этот браузер не поддерживает запись голоса"); return; }
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch (e) { toast("Разрешите доступ к микрофону"); return; }
-  const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
-  const mime = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || "";
-  const r = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-  const chunks = []; const started = Date.now();
-  r.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  const timer = setInterval(() => {
-    const sec = Math.floor((Date.now() - started) / 1000);
-    const el = $("recTime"); if (el) el.textContent = `● Запись ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")} — нажмите 🎤 ещё раз, чтобы отправить`;
-    if (sec >= 180) r.stop();
-  }, 250);
-  r.onstop = async () => {
-    clearInterval(timer); stream.getTracks().forEach(t => t.stop()); rec = null;
-    const mb = $("micBtn"); if (mb) mb.classList.remove("rec");
-    const el = $("recTime"); if (el) el.textContent = "Отправка…";
-    const type = (r.mimeType || mime || "audio/webm").split(";")[0];
-    const blob = new Blob(chunks, { type });
-    if (Date.now() - started < 700 || !blob.size) { if (el) el.textContent = ""; return; }
-    const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
-    const path = `${ROOM}/${Date.now()}-${rid()}.${ext}`;
-    const up = await sb.storage.from("awk-voice").upload(path, blob, { contentType: type === "audio/x-m4a" ? "audio/mp4" : type });
-    if (up.error) { if (el) el.textContent = ""; toast("Не удалось загрузить голосовое"); return; }
-    const url = sb.storage.from("awk-voice").getPublicUrl(path).data.publicUrl;
-    const { error } = await sb.rpc("awk_send", { p_room: ROOM, p_author: myName(), p_body: null, p_audio: url });
-    if (el) el.textContent = "";
-    if (error) { toast("Не удалось отправить голосовое"); return; }
-    channel && channel.send({ type: "broadcast", event: "msg", payload: {} });
-    await loadMessages();
-  };
-  r.start(); rec = r;
-  const mb = $("micBtn"); if (mb) mb.classList.add("rec");
-}
-
 /* ---------- запуск ---------- */
 async function init() {
   if (!/^[0-9a-f-]{36}$/i.test(ROOM)) { $("app").innerHTML = `<div class="center-msg"><h2>Комната не найдена</h2><p>Проверьте ссылку-приглашение.</p></div>`; return; }
@@ -702,6 +610,8 @@ async function init() {
   room = await fetchRoom();
   if (!room) { $("app").innerHTML = `<div class="center-msg"><h2>Комната не найдена</h2><p>Возможно, ведущий удалил эту игру. Проверьте ссылку-приглашение.</p></div>`; return; }
   if (room.is_host && !me) me = { name: "" };
+  RoomChat.init({ sb, room: ROOM, title: "Путь Пробуждения — чат игры", canExport: !!room.can_export, getName: myName, toast,
+    notify: () => channel && channel.send({ type: "broadcast", event: "msg", payload: {} }) });
   render();
   await loadMessages();
   // если открыли впервые — не показываем старую карточку

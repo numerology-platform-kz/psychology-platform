@@ -377,3 +377,8 @@ create policy awk_rooms_host_all on public.awk_rooms for all to authenticated us
 grant select, insert, update, delete on public.awk_rooms to authenticated;
 -- RPC: awk_get_room, awk_save_state, awk_set_call, awk_messages_list, awk_send (security definer; см. миграцию awk_rpcs)
 -- Storage: публичный бакет awk-voice (до 5 МБ, audio/*), загрузка для anon и authenticated
+
+-- Чат v2: фото, удаление своих сообщений (5 минут), архив для администратора и учителей, Лила онлайн
+-- awk_rooms.game ('awakening' | 'lila'); awk_messages.image_url, sender_key, deleted
+-- awk_can_archive(host): admin — все комнаты; teacher — свои и комнаты своих учеников
+-- RPC: awk_messages_list(room, after, key), awk_send(room, author, body, audio, image, key), awk_delete_message(id, key)

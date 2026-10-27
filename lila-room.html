@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лила — игровая комната</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="icon" href="favicon.png?v=1">
+<style>
+:root {
+  --page: #0B1530; --card: #16244D; --card2: #1B2B5A; --main: #0E1A3A;
+  --line: rgba(244,165,130,.55); --line-soft: rgba(244,165,130,.25);
+  --coral: #F4A582; --coral2: #E8826A; --cream: #FCE3D6; --text: #DCE2F4; --muted: #8C97B8;
+  --ok: #8fe3b0; --bad: #ff9d9d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--page); color: var(--text); font-family: Arial, sans-serif; }
+body { font-variant-numeric: lining-nums; }
+button, input, textarea { font: inherit; }
+h1, h2, h3 { font-family: "PT Serif", Georgia, serif; font-weight: 400; color: var(--cream); }
+.wrap { max-width: 1400px; margin: 0 auto; padding: 14px 16px 30px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { margin: 0; font-size: 24px; }
+.brand small { display: block; color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: linear-gradient(135deg, var(--coral), var(--coral2)); color: #1A1430; border-radius: 12px; padding: 10px 16px; cursor: pointer; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--cream); font-weight: 400; }
+.btn-small { padding: 7px 12px; font-size: 14px; }
+.input { width: 100%; background: var(--main); border: 1px solid var(--line-soft); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+.input:focus { outline: none; border-color: var(--coral); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+.panel { background: linear-gradient(145deg, var(--card2), var(--card)); border: 1px solid var(--line-soft); border-radius: 18px; padding: 16px; }
+.panel h3 { margin: 0 0 10px; font-size: 18px; color: var(--coral); }
+.side { display: flex; flex-direction: column; gap: 14px; }
+.msg-line { color: var(--muted); font-size: 14px; margin-top: 10px; min-height: 18px; line-height: 1.45; }
+.form-row { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.players { display: flex; flex-direction: column; gap: 6px; }
+.x { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; }
+.log { max-height: 220px; overflow-y: auto; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.center-msg { max-width: 520px; margin: 60px auto; text-align: center; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--card2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 12px; z-index: 10001; }
+.call-btn { background: #2D8CFF; color: #fff; border-color: #2D8CFF; }
+.print-area { display: none; }
+.lila-hero { display: flex; gap: 18px; align-items: center; }
+.lila-hero-icon { font-size: 56px; }
+.lila-hero h2 { margin: 0 0 8px; font-family: PT Serif, Georgia, serif; font-size: 30px; font-weight: 500; color: var(--cream); }
+.lila-hero p { margin: 0; color: var(--text); line-height: 1.6; max-width: 760px; }
+.lila-setup-player { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid rgba(244,165,130,.14); }
+.lila-chip { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #0A1430; font-weight: 700; font-size: 14px; border: 2px solid rgba(255,255,255,.75); box-shadow: 0 2px 6px rgba(0,0,0,.35); vertical-align: middle; }
+.lila-chip.big { width: 42px; height: 42px; min-width: 42px; font-size: 18px; }
+.lila-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.lila-layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
+.lila-board { position: relative; width: 100%; aspect-ratio: 9 / 8; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #0B1634; }
+.lila-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(8, 1fr); }
+.lila-cell { position: relative; border: 0; border-right: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07); background: color-mix(in srgb, var(--rc) 13%, #0E1A3A); color: var(--text); cursor: pointer; padding: 3px; display: flex; align-items: flex-end; justify-content: center; text-align: center; overflow: hidden; }
+.lila-cell:hover { background: color-mix(in srgb, var(--rc) 26%, #0E1A3A); }
+.lila-cell.chakra { background: color-mix(in srgb, var(--rc) 24%, #0E1A3A); }
+.lila-num { position: absolute; top: 4px; left: 6px; font-weight: 700; font-size: clamp(10px, 1.3vw, 15px); color: var(--cream); }
+.lila-mark { position: absolute; top: 3px; right: 6px; font-size: 12px; font-weight: 700; }
+.lila-mark.up { color: #F2D16B; } .lila-mark.down { color: #E8826A; }
+.lila-lotus { position: absolute; top: 50%; left: 50%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -62%); opacity: .55; box-shadow: 0 0 14px currentColor; }
+.lila-name { position: relative; font-size: clamp(8px, .82vw, 11px); line-height: 1.12; color: #cfd6ee; padding-bottom: 2px; }
+.lila-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lila-tokens { position: absolute; inset: 0; pointer-events: none; }
+.lila-token { position: absolute; width: 28px; height: 28px; margin: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #0A1430; border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.55); transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px))); transition: left .17s ease, top .17s ease, transform .2s; z-index: 2; }
+.lila-token.jumping { transition: left .95s cubic-bezier(.45,.05,.3,1), top .95s cubic-bezier(.45,.05,.3,1); z-index: 4; }
+.lila-token.current { z-index: 3; box-shadow: 0 0 0 3px rgba(252,227,214,.55), 0 3px 10px rgba(0,0,0,.6); }
+.lila-token.waiting { opacity: .8; }
+.lila-side { border: 1px solid var(--line-soft); border-radius: 16px; background: linear-gradient(145deg, rgba(27,43,90,.85), rgba(22,36,77,.85)); padding: 16px; }
+.lila-turn { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.lila-turn-name { color: var(--cream); font-size: 20px; font-family: PT Serif, Georgia, serif; }
+.lila-dice-wrap { display: flex; align-items: center; gap: 16px; }
+.lila-roll { flex: 1; padding: 14px 10px; font-size: 16px; }
+.lila-roll:disabled { opacity: .5; cursor: wait; }
+.lila-msg { min-height: 40px; color: var(--coral); font-size: 14px; line-height: 1.4; margin-top: 12px; }
+.lila-player { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 10px; border: 1px solid transparent; }
+.lila-player.active { border-color: var(--coral); background: rgba(244,165,130,.08); }
+.lila-query { color: var(--text); font-size: 12px; font-style: italic; margin-top: 3px; line-height: 1.35; }
+.lila-log { font-size: 12px; color: var(--muted); line-height: 1.45; max-height: 220px; overflow-y: auto; }
+.lila-log div { padding: 4px 0; border-bottom: 1px solid rgba(244,165,130,.08); }
+.dice-scene { width: 60px; height: 60px; perspective: 400px; flex: 0 0 60px; }
+.dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.2,.8,.25,1); }
+.dice-face { position: absolute; inset: 0; border-radius: 12px; background: #FCE3D6; border: 1px solid #E8826A; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 8px; box-shadow: inset 0 0 8px rgba(232,130,106,.35); }
+.dice-face span { display: flex; align-items: center; justify-content: center; }
+.dice-face span.pip::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #0A1430; }
+.dice-face.f1 { transform: rotateY(0deg) translateZ(30px); }
+.dice-face.f2 { transform: rotateY(90deg) translateZ(30px); }
+.dice-face.f3 { transform: rotateX(90deg) translateZ(30px); }
+.dice-face.f4 { transform: rotateX(-90deg) translateZ(30px); }
+.dice-face.f5 { transform: rotateY(-90deg) translateZ(30px); }
+.dice-face.f6 { transform: rotateY(180deg) translateZ(30px); }
+.lila-modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(4,8,22,.72); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.lila-modal { width: 640px; max-width: 100%; max-height: 92vh; overflow-y: auto; background: linear-gradient(145deg, #1B2B5A, #16244D); border: 1px solid var(--line); border-radius: 18px; padding: 22px; color: var(--text); box-shadow: 0 20px 70px rgba(0,0,0,.5); }
+.lila-modal-player { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+.lila-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.lila-finish { background: rgba(143,227,176,.12); border: 1px solid #8fe3b0; color: #c9f5da; padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 16px; }
+.lila-card-head { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.lila-card-num { width: 56px; height: 56px; min-width: 56px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; font-family: PT Serif, Georgia, serif; }
+.lila-card-row { color: var(--muted); font-size: 13px; }
+.lila-card-name { color: var(--cream); font-size: 24px; font-family: PT Serif, Georgia, serif; line-height: 1.15; }
+.lila-card-alt { color: var(--coral); font-size: 13px; margin-top: 2px; }
+.lila-card-short { color: var(--cream); font-style: italic; margin: 6px 0 10px; line-height: 1.5; }
+.lila-card-text { line-height: 1.65; font-size: 15px; }
+.lila-card-sub { color: var(--coral); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; margin: 14px 0 6px; }
+.lila-card-q { margin: 0; padding-left: 20px; line-height: 1.6; }
+.lila-info { background: rgba(244,165,130,.10); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+.lila-jump { border-radius: 12px; padding: 10px 12px; margin: 12px 0; font-size: 14px; line-height: 1.5; }
+.lila-jump.up { background: rgba(242,209,107,.12); border: 1px solid rgba(242,209,107,.55); color: #f6e3a6; }
+.lila-jump.down { background: rgba(232,130,106,.12); border: 1px solid rgba(232,130,106,.55); color: #f6c6b8; }
+.lila-rules { line-height: 1.6; padding-left: 20px; }
+.lila-rules li { margin-bottom: 6px; }
+.lila-path { display: flex; flex-wrap: wrap; gap: 6px; }
+.lila-path-step { font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line-soft); background: rgba(255,255,255,.04); }
+.lila-path-step.arrow { border-color: #F2D16B; } .lila-path-step.snake { border-color: #E8826A; }
+
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; color: #222; }
+  .wrap, .lila-modal-overlay, .toast { display: none !important; }
+  .print-area { display: block !important; color: #222; font-size: 12pt; line-height: 1.5; }
+  .print-area h1, .print-area h2, .print-area h3 { color: #1B2B5A; }
+  .print-area .pcard { border-left: 3px solid #E8826A; padding-left: 10px; margin: 8px 0 12px; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="center-msg">Загрузка комнаты…</div></div>
+<div class="print-area" id="printArea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lila-data.js?v=1"></script>
+<script src="lila.js?v=2"></script>
+<script src="room-chat.js?v=1"></script>
+<script>
+const SUPABASE_URL = "https://kfsyeejdwrcmwqacmigb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_4osUqgFDEHZ99UhULjHLIQ_M1vYSDe0";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ROOM = new URLSearchParams(location.search).get("room") || "";
+const ME_KEY = "awk_me_" + ROOM, SEEN_KEY = "awk_seen_" + ROOM;
+const COLORS = ["#F4A582", "#7FC8E8", "#8fe3b0", "#F2D16B", "#C49BF0", "#F07A8A", "#FFFFFF", "#5DCB8A"];
+
+let room = null, me = null, channel = null, busy = false, shellKey = "", shownRollKey = -1;
+
+/* ---------- общие функции, нужные lila.js ---------- */
+function escapeHtml(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+const esc = escapeHtml;
+function $(id) { return document.getElementById(id); }
+function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function loadMe() { try { return JSON.parse(localStorage.getItem(ME_KEY)); } catch (e) { return null; } }
+function saveMe() { try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch (e) {} }
+function seenSeq() { try { return +localStorage.getItem(SEEN_KEY) || 0; } catch (e) { return 0; } }
+function setSeen(n) { try { localStorage.setItem(SEEN_KEY, String(n)); } catch (e) {} }
+function rid() { return Math.random().toString(36).slice(2, 10); }
+function st() { return room.state; }
+function playerById(pid) { return (st().players || []).find(p => p.id === pid); }
+function myPlayer() { return me && me.pid ? playerById(me.pid) : null; }
+function current() { const s = st(); return s.status === "playing" ? s.players[s.turn] : null; }
+function myName() { return room.is_host ? (me && me.name ? me.name + " (ведущий)" : "Ведущий") : (me ? me.name : "Гость"); }
+function cellsWord(n) { return n === 1 ? "клетку" : (n < 5 ? "клетки" : "клеток"); }
+
+function normState(s) {
+  s = s && typeof s === "object" ? s : {};
+  if (!s.status) s.status = "lobby";
+  if (!Array.isArray(s.players)) s.players = [];
+  if (!Array.isArray(s.log)) s.log = [];
+  if (!Array.isArray(s.rolls)) s.rolls = [];
+  if (typeof s.turn !== "number") s.turn = 0;
+  if (typeof s.seq !== "number") s.seq = 0;
+  return s;
+}
+
+/* ---------- загрузка и сохранение ---------- */
+async function fetchRoom() {
+  const { data, error } = await sb.rpc("awk_get_room", { p_room: ROOM });
+  if (error || !data) return null;
+  data.state = normState(data.state);
+  return data;
+}
+async function commit(mutator) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const fresh = await fetchRoom();
+    if (!fresh) { toast("Нет связи с комнатой"); return false; }
+    const s = JSON.parse(JSON.stringify(fresh.state));
+    if (mutator(s) === false) { room = fresh; render(); return false; }
+    const { data, error } = await sb.rpc("awk_save_state", { p_room: ROOM, p_state: s, p_version: fresh.version });
+    if (error) { toast("Не удалось сохранить: " + error.message); return false; }
+    if (data >= 0) {
+      fresh.state = normState(s); fresh.version = data; room = fresh;
+      channel && channel.send({ type: "broadcast", event: "state", payload: { v: data } });
+      render(); checkCard();
+      return true;
+    }
+    await sleep(300);
+  }
+  toast("Кто-то ходит одновременно с вами — попробуйте ещё раз");
+  return false;
+}
+async function refresh() {
+  const fresh = await fetchRoom();
+  if (!fresh) return;
+  const changed = !room || fresh.version !== room.version || fresh.call_url !== room.call_url;
+  room = fresh;
+  if (changed) { render(); checkCard(); }
+}
+
+/* ---------- правила Лилы (те же, что в игре на одном экране) ---------- */
+function addLog(s, text) { s.log.push({ t: Date.now(), text }); if (s.log.length > 300) s.log = s.log.slice(-300); }
+function nextTurn(s) {
+  if (s.players.every(p => p.done)) { s.status = "over"; addLog(s, "Все игроки завершили путь"); return; }
+  let i = s.turn;
+  for (let k = 0; k < s.players.length; k++) { i = (i + 1) % s.players.length; if (!s.players[i].done) { s.turn = i; return; } }
+}
+function showCard(s, p, n, extra) { s.seq++; s.last = Object.assign({ seq: s.seq, pid: p.id, n }, extra || {}); }
+
+// Игрок встаёт на клетку n (и, если это начало стрелы или голова змеи, переходит дальше)
+function land(s, p, n, roll) {
+  p.pos = n;
+  p.path.push({ n, kind: "land" });
+  if (n === 68) { finish(s, p, roll); return; }
+  const to = lilaJump(n);
+  showCard(s, p, n, { roll, to: to || null });
+  if (to) {
+    const isArrow = !!LILA_ARROWS[n];
+    addLog(s, `${p.name}: ${isArrow ? "стрела поднимает" : "змея спускает"} с клетки ${n} на ${to}`);
+    p.pos = to;
+    p.path.push({ n: to, kind: isArrow ? "arrow" : "snake", from: n });
+    if (to === 68) { p.done = true; addLog(s, `${p.name} достиг(ла) Космического сознания 🎉`); s.last.finish = true; }
+  }
+}
+function finish(s, p, roll) {
+  p.done = true;
+  addLog(s, `${p.name} достиг(ла) Космического сознания 🎉`);
+  showCard(s, p, 68, { roll, finish: true });
+}
+
+function applyRoll(s, v) {
+  const p = s.players[s.turn];
+  s.lastRoll = v;
+  if (!p.born) {
+    if (v !== 6) { addLog(s, `${p.name}: выпало ${v}. Для входа в игру нужна шестёрка`); s.msg = `${p.name}: выпало ${v}. Для рождения в игре нужна шестёрка`; nextTurn(s); return; }
+    p.born = true; p.pos = 6; s.rolls = [];
+    p.path.push({ n: 1, kind: "birth" }, { n: 6, kind: "land" });
+    addLog(s, `${p.name}: выпала шестёрка — рождение в игре (1 → 6)`);
+    s.msg = `${p.name}: шестёрка! Рождение в игре. Шестёрка даёт ещё один бросок`;
+    showCard(s, p, 6, { roll: 6, birth: true });
+    return;
+  }
+  s.rolls.push(v);
+  if (v === 6) {
+    const n = s.rolls.length, eff = (n >= 3 ? n - 3 : n) * 6, t = p.pos + eff;
+    if (eff > 0 && t <= 72 && (t === 68 || lilaJump(t) === 68)) {
+      s.rolls = [];
+      addLog(s, `${p.name}: шестёрка ведёт прямо в Космическое сознание`);
+      land(s, p, t, 6); s.msg = ""; nextTurn(s); return;
+    }
+    if (n === 3) { addLog(s, `${p.name}: три шестёрки подряд — они сгорают`); s.msg = `${p.name}: три шестёрки подряд сгорают. Бросайте ещё раз`; }
+    else s.msg = `${p.name}: шестёрка! Бросайте ещё раз (выпало: ${s.rolls.join(" + ")})`;
+    return;
+  }
+  const sixes = s.rolls.length - 1, eff = (sixes >= 3 ? sixes - 3 : sixes) * 6 + v;
+  const txt = s.rolls.join(" + "); s.rolls = [];
+  const target = p.pos + eff;
+  if (target > 72) {
+    addLog(s, `${p.name}: выпало ${txt}, нужно не больше ${72 - p.pos} — ход пропускается`);
+    s.msg = `${p.name}: нужно выбросить не больше ${72 - p.pos}. Ход пропускается`;
+    nextTurn(s); return;
+  }
+  addLog(s, `${p.name}: выпало ${txt} → клетка ${target}`);
+  s.msg = `${p.name}: выпало ${txt}. Ход на ${eff} ${cellsWord(eff)}`;
+  land(s, p, target, v);
+  nextTurn(s);
+}
+
+async function roll() {
+  if (busy) return;
+  const cur = current(); if (!cur) return;
+  if (!(room.is_host || (me && me.pid === cur.id))) { toast("Сейчас ход другого игрока"); return; }
+  busy = true; renderControls();
+  const v = lilaRandomDie();
+  await lilaAnimateDice(v);
+  await commit(s => {
+    if (s.status !== "playing") return false;
+    const p = s.players[s.turn]; if (!p || p.id !== cur.id) return false;
+    applyRoll(s, v);
+  });
+  shownRollKey = st().log.length;
+  busy = false; renderControls();
+}
+
+async function returnToEarth(pid) {
+  await commit(s => {
+    const p = s.players.find(x => x.id === pid); if (!p || !p.done) return false;
+    p.done = false; p.pos = 51; p.path.push({ n: 51, kind: "return" });
+    if (s.status === "over") { s.status = "playing"; s.turn = s.players.indexOf(p); }
+    addLog(s, `${p.name} возвращается на клетку 51 «Земля», чтобы пройти путь ещё раз`);
+  });
+  closeModal();
+}
+
+/* ---------- участники ---------- */
+function newPlayer(s, id, name, query) {
+  const used = s.players.map(p => p.color);
+  const color = COLORS.find(c => !used.includes(c)) || COLORS[s.players.length % COLORS.length];
+  return { id, name: name.slice(0, 40), query: query.slice(0, 300), color, pos: 68, born: false, done: false, path: [] };
+}
+async function joinGame() {
+  const name = $("jName").value.trim(), query = $("jQuery") ? $("jQuery").value.trim() : "";
+  if (!name) { toast("Впишите имя"); return; }
+  if (st().status !== "lobby" || room.is_host) { me = { name }; saveMe(); render(true); return; }
+  if (!query) { toast("Впишите свой запрос"); return; }
+  const pid = rid();
+  const ok = await commit(s => {
+    if (s.status !== "lobby") return false;
+    if (s.players.length >= 8) { toast("В комнате уже 8 игроков"); return false; }
+    s.players.push(newPlayer(s, pid, name, query));
+    addLog(s, `👋 ${name} присоединяется к игре`);
+  });
+  if (ok) { me = { pid, name }; saveMe(); render(true); }
+}
+async function hostAddPlayer() {
+  const name = $("hName").value.trim(), query = $("hQuery").value.trim();
+  if (!name) { toast("Впишите имя игрока"); return; }
+  const ok = await commit(s => {
+    if (s.status === "over") return false;
+    if (s.players.length >= 8) { toast("Максимум 8 игроков"); return false; }
+    s.players.push(newPlayer(s, rid(), name, query));
+    addLog(s, `👋 Ведущий добавляет игрока ${name}`);
+  });
+  if (ok) { $("hName").value = ""; $("hQuery").value = ""; }
+}
+async function removePlayer(pid) {
+  if (!confirm("Убрать игрока из игры?")) return;
+  await commit(s => {
+    const i = s.players.findIndex(p => p.id === pid); if (i < 0) return false;
+    const [p] = s.players.splice(i, 1);
+    if (s.status === "playing") {
+      if (!s.players.length) s.status = "lobby";
+      else { if (s.turn > i) s.turn--; if (s.turn >= s.players.length) s.turn = 0; s.rolls = []; if (s.players[s.turn].done) nextTurn(s); }
+    }
+    addLog(s, `${p.name} выходит из игры`);
+  });
+}
+async function startGame() {
+  await commit(s => {
+    if (!s.players.length) { toast("Добавьте хотя бы одного игрока"); return false; }
+    s.status = "playing"; s.turn = 0; s.rolls = []; s.msg = "";
+    s.players.forEach(p => { p.pos = 68; p.born = false; p.done = false; p.path = []; });
+    addLog(s, "✨ Игра началась! Все фишки ждут на клетке 68. Для рождения нужна шестёрка");
+  });
+}
+async function finishGame() {
+  if (!confirm("Завершить игру для всех?")) return;
+  await commit(s => { s.status = "over"; addLog(s, "Ведущий завершил игру"); });
+}
+async function setCall() {
+  const url = prompt("Ссылка на звонок (Zoom, Google Meet и т.п.):", room.call_url || "");
+  if (url === null) return;
+  if (url && !/^https?:\/\//i.test(url.trim())) { toast("Ссылка должна начинаться с https://"); return; }
+  const { error } = await sb.rpc("awk_set_call", { p_room: ROOM, p_url: url });
+  if (error) { toast("Не удалось сохранить ссылку"); return; }
+  room.call_url = url.trim() || null; render(true);
+  channel && channel.send({ type: "broadcast", event: "state", payload: {} });
+}
+function copyInvite() {
+  const link = location.origin + location.pathname + "?room=" + ROOM;
+  (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => toast("Ссылка скопирована — отправьте её игрокам"), () => prompt("Скопируйте ссылку:", link));
+}
+
+/* ---------- отрисовка ---------- */
+function joined() { return room.is_host || !!(me && (me.pid ? myPlayer() : me.name)); }
+
+function render(force) {
+  if (!room) return;
+  const s = st();
+  const key = [joined(), room.is_host, room.call_url, s.status, s.players.some(p => p.path.length)].join("|");
+  if (force || key !== shellKey || !$("board")) { shellKey = key; renderShell(); }
+  renderPlayers(); renderControls(); renderLog(); placeTokens();
+  RoomChat.setCanWrite(joined());
+}
+
+function renderShell() {
+  const s = st();
+  const keep = {}; ["jName", "jQuery", "hName", "hQuery"].forEach(id => { const el = $(id); if (el) keep[id] = el.value; });
+  $("app").innerHTML = `
+    <div class="topbar">
+      <div class="brand">
+        <svg width="40" height="40" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 14 C15 5 6 9 8.5 18 C10 23.5 16 23.5 22 22 Z" fill="#F4A582"/><path d="M22 14 C29 5 38 9 35.5 18 C34 23.5 28 23.5 22 22 Z" fill="#F4A582"/><path d="M22 22 C16 23 11.5 27.5 13.5 32.5 C15.5 36 20 31.5 22 26 Z" fill="#E8826A"/><path d="M22 22 C28 23 32.5 27.5 30.5 32.5 C28.5 36 24 31.5 22 26 Z" fill="#E8826A"/><path d="M22 13 L22 32" stroke="#FCE3D6" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div><small>PSYCHOLOGY Platform</small><h1>Лила — игра самопознания</h1></div>
+      </div>
+      <div class="top-actions">
+        ${room.call_url ? `<a class="btn btn-small call-btn" href="${esc(room.call_url)}" target="_blank" rel="noopener">🎥 Войти в звонок</a>` : ""}
+        ${room.is_host ? `<button class="btn btn-ghost btn-small" onclick="copyInvite()">🔗 Пригласить игроков</button>
+          <button class="btn btn-ghost btn-small" onclick="setCall()">🎥 ${room.call_url ? "Изменить" : "Добавить"} ссылку на звонок</button>` : ""}
+        <button class="btn btn-ghost btn-small" onclick="showRules()">📖 Правила</button>
+        ${s.players.some(p => p.path.length) ? `<button class="btn btn-ghost btn-small" onclick="showSummary()">📜 Путь игроков</button>` : ""}
+        ${room.is_host && s.status === "playing" ? `<button class="btn btn-ghost btn-small" onclick="finishGame()">Завершить игру</button>` : ""}
+      </div>
+    </div>
+    <div class="layout">
+      <div class="panel" style="padding:10px;"><div id="board">${lilaBoardHtml()}</div></div>
+      <div class="side">
+        <div class="panel" id="controls"></div>
+        <div class="panel"><h3>Игроки</h3><div class="players" id="players"></div>${joinBlock()}${hostAddBlock()}</div>
+        <div id="chatSlot"></div>
+        <div class="panel"><h3>Ход игры</h3><div class="log" id="log"></div></div>
+      </div>
+    </div>`;
+  Object.entries(keep).forEach(([id, v]) => { const el = $(id); if (el) el.value = v; });
+  $("chatSlot").replaceWith(RoomChat.el);
+}
+
+function joinBlock() {
+  if (joined()) return "";
+  const lobby = st().status === "lobby";
+  return `<div class="form-row">
+    <b style="color:var(--cream);">${lobby ? "Присоединиться к игре" : "Войти в комнату"}</b>
+    <input id="jName" class="input" maxlength="40" placeholder="Ваше имя">
+    ${lobby ? `<textarea id="jQuery" class="input" rows="2" maxlength="300" placeholder="Ваш запрос: «Как мне…», «Что мне важно понять о…»"></textarea>` : `<p class="msg-line" style="margin:0;">Игра уже идёт — вы можете наблюдать и писать в чат</p>`}
+    <button class="btn" onclick="joinGame()">${lobby ? "Присоединиться" : "Войти"}</button>
+  </div>`;
+}
+function hostAddBlock() {
+  if (!room.is_host || st().status === "over") return "";
+  return `<details style="margin-top:10px;"><summary style="cursor:pointer;color:var(--coral);">+ Добавить игрока вручную</summary>
+    <div class="form-row"><input id="hName" class="input" maxlength="40" placeholder="Имя игрока">
+    <textarea id="hQuery" class="input" rows="2" maxlength="300" placeholder="Запрос игрока"></textarea>
+    <button class="btn btn-small" onclick="hostAddPlayer()">Добавить</button></div></details>`;
+}
+
+function placeTokens() {
+  const box = $("lilaTokens"); if (!box) return;
+  const s = st(), offsets = [[0, 0], [-13, -10], [13, -10], [-13, 10], [13, 10], [0, 16], [-16, 2], [16, 2]];
+  const byCell = {};
+  s.players.forEach(p => { (byCell[p.pos] = byCell[p.pos] || []).push(p); });
+  const ids = new Set(s.players.map(p => "tok" + p.id));
+  [...box.children].forEach(c => { if (!ids.has(c.id)) c.remove(); });
+  const cur = current();
+  s.players.forEach(p => {
+    let el = $("tok" + p.id);
+    if (!el) { el = document.createElement("div"); el.id = "tok" + p.id; el.className = "lila-token"; box.appendChild(el); }
+    el.style.background = p.color; el.title = p.name; el.textContent = p.name.charAt(0).toUpperCase();
+    const g = byCell[p.pos], k = g.indexOf(p), xy = lilaXY(p.pos);
+    const [ox, oy] = g.length > 1 ? offsets[k % offsets.length] : [0, 0];
+    el.style.left = (xy.x / 9) + "%"; el.style.top = (xy.y / 8) + "%";
+    el.style.setProperty("--ox", ox + "px"); el.style.setProperty("--oy", oy + "px");
+    el.classList.toggle("current", !!cur && cur.id === p.id);
+    el.classList.toggle("waiting", !p.born);
+  });
+}
+
+function renderPlayers() {
+  const s = st(), el = $("players"); if (!el) return;
+  el.innerHTML = s.players.length ? s.players.map((p, i) => `
+    <div class="lila-player${s.status === "playing" && i === s.turn ? " active" : ""}">
+      <div class="lila-chip" style="background:${p.color};">${esc(p.name.charAt(0).toUpperCase())}</div>
+      <div style="min-width:0;flex:1;">
+        <div style="color:var(--cream);font-weight:700;">${esc(p.name)}${me && me.pid === p.id ? " <span style='color:var(--muted);font-weight:400;'>(вы)</span>" : ""}</div>
+        ${p.query ? `<div class="lila-query">«${esc(p.query)}»</div>` : ""}
+        <div style="font-size:12px;margin-top:4px;color:${p.done ? "var(--ok)" : "var(--muted)"};">${p.done ? "🎉 Космическое сознание" : !p.born ? "Ждёт шестёрку для рождения" : `Клетка ${p.pos} «${esc(lilaCellTitle(p.pos))}»`}</div>
+      </div>
+      ${room.is_host && s.status !== "over" ? `<button class="x" title="Убрать" onclick="removePlayer('${p.id}')">×</button>` : ""}
+    </div>`).join("") : `<p class="msg-line" style="margin:0;">Пока никто не присоединился. ${room.is_host ? "Отправьте игрокам ссылку-приглашение или добавьте их вручную." : ""}</p>`;
+}
+
+function renderControls() {
+  const s = st(), el = $("controls"); if (!el) return;
+  if (s.status === "lobby") {
+    el.innerHTML = `<h3>Ожидание игроков</h3>
+      <p class="msg-line" style="margin-top:0;">${room.is_host ? "Когда все игроки присоединятся, нажмите «Начать игру»." : "Ведущий скоро начнёт игру. Пока можно познакомиться в чате."}</p>
+      ${room.is_host ? `<button class="btn" style="width:100%;margin-top:6px;" onclick="startGame()" ${s.players.length ? "" : "disabled"}>✨ Начать игру</button>` : ""}`;
+    return;
+  }
+  if (s.status === "over") {
+    el.innerHTML = `<h3>Игра завершена</h3><p class="msg-line" style="margin-top:0;">Спасибо за путь! Итоги каждого игрока — в «Путь игроков».</p>
+      <button class="btn" style="width:100%;margin-top:6px;" onclick="showSummary()">📜 Итоги игры</button>`;
+    return;
+  }
+  const p = current();
+  const canRoll = !busy && (room.is_host || (me && p && me.pid === p.id));
+  const had = !!$("lilaDice");
+  if (!had || el.dataset.turn !== p.id) {
+    el.dataset.turn = p.id;
+    el.innerHTML = `
+      <div class="lila-turn"><div class="lila-chip big" style="background:${p.color};" id="turnChip">${esc(p.name.charAt(0).toUpperCase())}</div>
+        <div><div style="color:var(--muted);font-size:13px;">Сейчас ходит</div><div class="lila-turn-name" id="turnName">${esc(p.name)}</div></div></div>
+      <div class="lila-dice-wrap">${lilaDiceHtml()}<button class="btn lila-roll" id="rollBtn" onclick="roll()">🎲 Бросить кубик</button></div>
+      <div class="lila-msg" id="turnMsg"></div>
+      <button class="btn btn-ghost btn-small" id="lastBtn" style="margin-top:8px;" onclick="showLast()">Открыть последнюю карточку</button>`;
+  }
+  $("rollBtn").disabled = !canRoll;
+  $("lastBtn").style.display = s.last ? "" : "none";
+  if (s.lastRoll && s.log.length !== shownRollKey && !busy) { shownRollKey = s.log.length; lilaAnimateDice(s.lastRoll); }
+  $("turnMsg").textContent = s.msg || (canRoll ? (room.is_host && me?.pid !== p.id ? "Вы ведущий: можете бросить кубик за игрока" : (!p.born ? "Ваш ход! Для рождения нужна шестёрка" : "Ваш ход!")) : "Ждём хода игрока");
+}
+
+function renderLog() {
+  const el = $("log"); if (!el) return;
+  el.innerHTML = st().log.slice().reverse().map(l => `<div>${esc(l.text)}</div>`).join("") || "<div>Здесь появится история ходов</div>";
+}
+
+/* ---------- карточки ---------- */
+function closeModal() { const o = $("lilaModal"); if (o) o.remove(); }
+function modal(html) {
+  const ov = lilaModal(html);
+  ov.addEventListener("click", e => { if (e.target === ov) closeModal(); });
+  return ov;
+}
+function playerLine(p) {
+  return p ? `<div class="lila-modal-player"><span class="lila-chip" style="background:${p.color};">${esc(p.name.charAt(0).toUpperCase())}</span>${esc(p.name)}${p.query ? ` · <i>«${esc(p.query)}»</i>` : ""}</div>` : "";
+}
+function showLast() {
+  const L = st().last; if (!L) return;
+  const p = playerById(L.pid);
+  if (L.finish && L.n === 68) {
+    modal(`${playerLine(p)}<div class="lila-finish">🎉 ${esc(p ? p.name : "")} достиг(ла) Космического сознания!</div>
+      ${lilaCellCardHtml(68)}
+      <div class="lila-modal-actions">
+        ${room.is_host && p && p.done ? `<button class="btn btn-ghost" onclick="returnToEarth('${p.id}')">Вернуть на клетку 51 «Земля»</button>` : ""}
+        <button class="btn" onclick="closeModal()">Закрыть</button></div>`);
+    return;
+  }
+  const info = L.birth ? "Шестёрка! Игрок родился в игре: клетка 1 «Рождение», затем переход на клетку 6 «Заблуждение»" : (L.roll ? `Выпало на кубике: ${L.roll}` : "");
+  modal(`${playerLine(p)}${lilaCellCardHtml(L.n, { info, jumpTo: L.to || null })}
+    <div class="lila-modal-actions">
+      ${L.to ? `<button class="btn btn-ghost" onclick="showJumpTarget()">Открыть клетку ${L.to} →</button>` : ""}
+      <button class="btn" onclick="closeModal()">Закрыть</button></div>`);
+}
+function showJumpTarget() {
+  const L = st().last; if (!L || !L.to) return;
+  const p = playerById(L.pid);
+  modal(`${playerLine(p)}${L.finish ? `<div class="lila-finish">🎉 ${esc(p ? p.name : "")} достиг(ла) Космического сознания!</div>` : ""}
+    ${lilaCellCardHtml(L.to, { cameFrom: L.n, jumpTo: null })}
+    <div class="lila-modal-actions">
+      ${L.finish && room.is_host && p && p.done ? `<button class="btn btn-ghost" onclick="returnToEarth('${p.id}')">Вернуть на клетку 51 «Земля»</button>` : ""}
+      <button class="btn" onclick="closeModal()">Закрыть</button></div>`);
+}
+// клик по клетке поля — описание клетки (функция из lila.js вызывает эту)
+function lilaCellInfo(n) {
+  modal(`${lilaCellCardHtml(n)}<div class="lila-modal-actions"><button class="btn" onclick="closeModal()">Закрыть</button></div>`);
+}
+function checkCard() {
+  const L = st().last;
+  if (L && L.seq > seenSeq()) { setSeen(L.seq); setTimeout(showLast, 500); }
+}
+function showRules() {
+  modal(`<h2 style="margin-top:0;">📖 Правила игры</h2><ol class="lila-rules">${LILA_RULES.map(r => `<li>${esc(r)}</li>`).join("")}</ol>
+    <div class="lila-modal-actions"><button class="btn" onclick="closeModal()">Понятно</button></div>`);
+}
+
+/* ---------- итоги ---------- */
+function stepTitle(x) {
+  const t = `${x.n} «${lilaCellTitle(x.n)}»`;
+  return x.kind === "birth" ? "Рождение: " + t : x.kind === "arrow" ? "↑ Стрела: " + t : x.kind === "snake" ? "↓ Змея: " + t : x.kind === "return" ? "Возврат: " + t : t;
+}
+function summaryHtml(forPrint) {
+  return st().players.map(p => `
+    <div style="margin-bottom:22px;">
+      <h3 style="margin:0 0 4px;">${esc(p.name)}${p.done ? " — 🎉 Космическое сознание" : ""}</h3>
+      ${p.query ? `<p style="margin:0 0 8px;"><i>Запрос: «${esc(p.query)}»</i></p>` : ""}
+      ${p.path.length ? (forPrint
+        ? p.path.map(x => `<div class="pcard"><b>${esc(stepTitle(x))}</b><br>${esc(LILA_CELLS[x.n].short)}</div>`).join("")
+        : `<div class="lila-path">${p.path.map(x => `<span class="lila-path-step ${x.kind}">${esc(stepTitle(x))}</span>`).join("")}</div>`)
+        : "<p>Ходов ещё не было</p>"}
+    </div>`).join("");
+}
+function showSummary() {
+  modal(`<h2 style="margin-top:0;">📜 Путь игроков</h2>${summaryHtml(false)}
+    <div class="lila-modal-actions"><button class="btn btn-ghost" onclick="printSummary()">⬇ Скачать PDF</button><button class="btn" onclick="closeModal()">Закрыть</button></div>`);
+}
+function printSummary() {
+  $("printArea").innerHTML = `<h1>Лила — итоги игры</h1><p>${new Date().toLocaleDateString("ru-RU")}</p>${summaryHtml(true)}
+    <p style="margin-top:20px;font-size:10pt;color:#777;">PSYCHOLOGY Platform</p>`;
+  const old = document.title; document.title = "Лила — итоги игры " + new Date().toLocaleDateString("ru-RU");
+  window.print(); setTimeout(() => { document.title = old; }, 1000);
+}
+
+/* ---------- запуск ---------- */
+async function init() {
+  if (!/^[0-9a-f-]{36}$/i.test(ROOM)) { $("app").innerHTML = `<div class="center-msg"><h2>Комната не найдена</h2><p>Проверьте ссылку-приглашение.</p></div>`; return; }
+  me = loadMe();
+  room = await fetchRoom();
+  if (!room) { $("app").innerHTML = `<div class="center-msg"><h2>Комната не найдена</h2><p>Возможно, ведущий удалил эту игру. Проверьте ссылку-приглашение.</p></div>`; return; }
+  if (room.is_host && !me) me = { name: "" };
+  RoomChat.init({ sb, room: ROOM, title: "Лила — чат игры", canExport: !!room.can_export, getName: myName, toast,
+    notify: () => channel && channel.send({ type: "broadcast", event: "msg", payload: {} }) });
+  render(true);
+  RoomChat.load();
+  if (st().last && !seenSeq()) setSeen(st().last.seq);
+  channel = sb.channel("awk-" + ROOM, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: "state" }, () => refresh())
+    .on("broadcast", { event: "msg" }, () => RoomChat.load())
+    .subscribe();
+  setInterval(() => { refresh(); RoomChat.load(); }, 8000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); RoomChat.load(); } });
+}
+init();
+</script>
+</body>
+</html>

@@ -503,9 +503,10 @@ select.input option { background: #0E1A3A; color: #fff; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="lila-data.js?v=1"></script>
-<script src="lila.js?v=1"></script>
+<script src="lila.js?v=2"></script>
 <script src="awakening-data.js?v=1"></script>
-<script src="awakening.js?v=1"></script>
+<script src="room-chat.js?v=1"></script>
+<script src="awakening.js?v=2"></script>
 <script>
 /* ============================================================
    SUPABASE — данные проекта «Psychology Platform»
@@ -720,14 +721,15 @@ async function showSection(key) {
 const SECTION_CONTENT = {
   games: [
     { icon: "🪷", title: "Лила", desc: "Древняя игра самопознания: 72 клетки, путь к ответу на ваш запрос", onclick: "openLila()" },
-    { icon: "🌸", title: "Путь Пробуждения", desc: "Онлайн-игра по 7 чакрам и 14 сферам жизни: общая комната, чат с голосовыми и видеозвонок", onclick: "openAwakening()" }
+    { icon: "🌸", title: "Путь Пробуждения", desc: "Онлайн-игра по 7 чакрам и 14 сферам жизни: общая комната, чат с голосовыми и видеозвонок", onclick: "openAwakening()" },
+    { icon: "📁", title: "Архив чатов", desc: "Переписка игроков из игровых комнат: прочитать и скачать в PDF", onclick: "openChatArchive()", show: () => awkCanArchive() }
   ],
   tests: [], nlp: [], cbt: [], mac: []
 };
 
 function renderSectionPage(key) {
   const s = SECTION_BY_KEY[key];
-  const items = SECTION_CONTENT[key] || [];
+  const items = (SECTION_CONTENT[key] || []).filter(it => !it.show || it.show());
   contentEl().innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
