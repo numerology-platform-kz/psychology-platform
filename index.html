@@ -183,6 +183,29 @@ select.input option { background: #0E1A3A; color: #fff; }
 .mcell:hover { border-color: var(--coral); }
 .mcell.done { background: linear-gradient(135deg, var(--coral), var(--coral2)); border-color: var(--coral); }
 .mcell:disabled { opacity: .22; cursor: default; }
+.month-table .mt-num { width: 28px; min-width: 28px; color: var(--muted); font-size: 11px; position: sticky; left: 0; z-index: 1; background: #17264f; }
+.month-table .mt-num + .mt-name { left: 28px; }
+.month-table tr.habit-empty td { height: 30px; }
+.habit-slot { background: none; border: none; color: rgba(140,151,184,.75); cursor: pointer; font-size: 12.5px; text-align: left; padding: 0; width: 100%; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.habit-slot i { font-style: italic; }
+.habit-slot:hover { color: var(--coral); }
+.habit-title { background: none; border: none; color: var(--cream); cursor: pointer; font-size: 14px; text-align: left; padding: 0; }
+.habit-title:hover { color: var(--coral); }
+.mcell.val { width: 22px; font-size: 10.5px; letter-spacing: -.3px; font-weight: 600; color: var(--cream); }
+.mcell.val.has { border-color: #9CC3F0; background: rgba(156,195,240,.16); }
+.mcell.val.has.water { border-color: #7FC8E8; background: rgba(127,200,232,.18); }
+.habit-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-bottom: 10px; }
+.habit-head .month-pill:last-child { justify-self: end; }
+.month-pill { justify-self: start; border: 1px solid var(--line-soft); background: rgba(244,165,130,.10); color: var(--cream); border-radius: 999px; padding: 7px 16px; cursor: pointer; font-family: PT Serif, Georgia, serif; font-size: 15px; }
+.month-pill:hover { border-color: var(--coral); }
+.habit-month { text-align: center; font-family: PT Serif, Georgia, serif; color: var(--cream); line-height: 1.1; }
+.habit-month div { font-size: 30px; letter-spacing: 2px; }
+.habit-month span { color: var(--coral); letter-spacing: 4px; font-size: 15px; }
+.hint-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hint-chip { border: 1px solid var(--line-soft); background: rgba(255,255,255,.04); color: var(--text); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.hint-chip small { color: var(--muted); }
+.hint-chip:hover { border-color: var(--coral); }
+.hint-chip.sel { border-color: var(--coral); background: rgba(244,165,130,.2); color: #fff; }
 .habit-del { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 4px; }
 .habit-del:hover { color: var(--bad); }
 .habit-add { display: flex; gap: 10px; margin-top: 16px; max-width: 560px; }
@@ -296,6 +319,9 @@ select.input option { background: #0E1A3A; color: #fff; }
   .mcell { border-color: #999; width: 18px; height: 18px; }
   .mcell.done { background: #E8826A !important; }
   .mcell:disabled { opacity: 1; }
+  .month-table .mt-num { position: static; background: #fff !important; color: #555 !important; }
+  .habit-head { margin-bottom: 4px; } .habit-month div { font-size: 22px; color: #1B2B5A; } .habit-month span { color: #E8826A; }
+  .mcell.val.has { background: #eef4fb !important; color: #222 !important; }
   .ch-day:disabled { opacity: 1; }
 }
 
@@ -503,10 +529,10 @@ select.input option { background: #0E1A3A; color: #fff; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="lila-data.js?v=1"></script>
-<script src="lila.js?v=2"></script>
+<script src="lila.js?v=3"></script>
 <script src="awakening-data.js?v=1"></script>
 <script src="room-chat.js?v=1"></script>
-<script src="awakening.js?v=2"></script>
+<script src="awakening.js?v=3"></script>
 <script>
 /* ============================================================
    SUPABASE — данные проекта «Psychology Platform»
@@ -777,11 +803,8 @@ function parseNum(v) { const n = parseFloat(String(v || "").replace(",", ".").tr
 
 const TRACKER_TABS = [
   { key: "habits",    label: "📅 Привычки" },
-  { key: "mood",      label: "🌈 Настроение" },
-  { key: "sleep",     label: "😴 Сон и вода" },
   { key: "gratitude", label: "🙏 Благодарность" },
   { key: "wheel",     label: "🎯 Колесо баланса" },
-  { key: "challenge", label: "🔥 Челленджи 21 день" },
   { key: "body",      label: "⚖️ Вес и ИМТ" },
   { key: "summary",   label: "📊 Итоги месяца" }
 ];
@@ -791,7 +814,7 @@ async function renderHabitTracker() {
   contentEl().innerHTML = `
     <div class="dashboard-wrap">
       <div class="dashboard-head">
-        <div><h2>${s.icon} ${escapeHtml(s.title)}</h2><p>Привычки, настроение, сон, вес и итоги месяца в одном месте</p></div>
+        <div><h2>${s.icon} ${escapeHtml(s.title)}</h2><p>Привычки, настроение, сон, вода, благодарность, вес и итоги месяца в одном месте</p></div>
       </div>
       <div class="tracker-tabs no-print">
         ${TRACKER_TABS.map(t => `<button class="tracker-tab ${trackerTab === t.key ? "active" : ""}" onclick="switchTrackerTab('${t.key}')">${t.label}</button>`).join("")}
@@ -808,8 +831,7 @@ async function renderTrackerTab() {
   box.innerHTML = `<div class="empty-table">Загрузка...</div>`;
   const run = {
     habits: async () => { await loadTrackerData(); drawTracker(); },
-    mood: renderMoodTab, sleep: renderSleepTab, gratitude: renderGratitudeTab, wheel: renderWheelTab,
-    challenge: renderChallengeTab, body: renderBodyTab, summary: renderSummaryTab
+    gratitude: renderGratitudeTab, wheel: renderWheelTab, body: renderBodyTab, summary: renderSummaryTab
   }[trackerTab];
   try { await run(); }
   catch (e) {
@@ -887,19 +909,85 @@ function dayBarsSvg(days, values, opts) {
 }
 
 
+const HABIT_ROWS = 20;
+const HABIT_SPECIAL = {
+  mood:  { icon: "🌈", title: "Настроение", hint: "смайлик каждый день" },
+  sleep: { icon: "😴", title: "Сон",        hint: "сколько часов спали" },
+  water: { icon: "💧", title: "Вода",       hint: "сколько литров выпили" }
+};
+// Подсказки: человек сам выбирает или пишет своё — по умолчанию ничего не вписано
+const HABIT_SUGGESTIONS = [
+  "Чтение 30 минут", "Иностранный язык 1 час", "Зарядка 15 минут", "Тренировка", "10 000 шагов",
+  "Медитация 10 минут", "Дыхательная практика", "Прогулка на свежем воздухе", "Лечь спать до 23:00",
+  "Подъём в 6:00", "Без сахара", "Без фастфуда", "Без соцсетей после 21:00", "Планирование дня",
+  "Дневник / записи мыслей", "Витамины", "Уход за собой", "Растяжка / йога", "Время с семьёй", "Откладывать деньги"
+];
+const HABIT_ROW_HINTS = ["Настроение", "Сон", "Вода", "Чтение 30 минут", "Иностранный язык 1 час", "Зарядка 15 минут", "10 000 шагов", "Медитация 10 минут"];
+const SLEEP_OPTIONS = [5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 10];
+const WATER_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3];
+
+function waterOf(r) { return r ? (r.water_l != null ? Number(r.water_l) : (r.water_glasses ? r.water_glasses * 0.25 : null)) : null; }
+
 async function loadTrackerData() {
   const uid = window.currentUserId;
   const days = monthDays(trackerMonth);
   const prev = new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() - 1, 1);
   const [{ data: habits, error: e1 }, { data: checks, error: e2 }, { data: prevH }] = await Promise.all([
-    supabaseClient.from("habits").select("id, title, sort_order, created_at").eq("user_id", uid).eq("month", monthKey(trackerMonth)).order("sort_order").order("created_at"),
+    supabaseClient.from("habits").select("id, title, kind, sort_order, created_at").eq("user_id", uid).eq("month", monthKey(trackerMonth)).order("sort_order").order("created_at"),
     supabaseClient.from("habit_checks").select("habit_id, day").eq("user_id", uid).gte("day", isoDay(days[0])).lte("day", isoDay(days[days.length - 1])),
-    supabaseClient.from("habits").select("title, sort_order").eq("user_id", uid).eq("month", monthKey(prev)).order("sort_order")
+    supabaseClient.from("habits").select("title, kind, sort_order").eq("user_id", uid).eq("month", monthKey(prev)).order("sort_order"),
+    loadDaily()
   ]);
   if (e1 || e2) console.error("Ошибка загрузки трекера:", e1 || e2);
-  trackerHabits = habits || [];
+  trackerHabits = (habits || []).map(h => Object.assign(h, { kind: h.kind || "check" }));
   trackerChecks = new Set((checks || []).map(c => c.habit_id + "|" + c.day));
   prevMonthHabits = prevH || [];
+}
+
+function habitCellHtml(h, d, todayIso) {
+  const iso = isoDay(d), wd = (d.getDay() + 6) % 7;
+  const cls = [wd >= 5 ? "we" : "", iso === todayIso ? "today" : ""].join(" ");
+  const dis = iso > todayIso ? "disabled" : "";
+  const r = dailyLog[iso];
+  if (h.kind === "mood") {
+    const m = r && r.mood ? MOOD_BY_V[r.mood] : null;
+    return `<td class="${cls}"><button class="mcell val${m ? " has" : ""}" ${dis} style="${m ? `background:${m.color}40;border-color:${m.color};` : ""}" onclick='openMoodPicker(${JSON.stringify(iso)})' aria-label="Настроение ${d.getDate()} числа">${m ? m.e : ""}</button></td>`;
+  }
+  if (h.kind === "sleep") {
+    const v = r && r.sleep_hours != null ? Number(r.sleep_hours) : null;
+    return `<td class="${cls}"><button class="mcell val${v != null ? " has" : ""}" ${dis} onclick='openValuePicker("sleep", ${JSON.stringify(iso)})' aria-label="Сон ${d.getDate()} числа">${v != null ? fmtNum(v) : ""}</button></td>`;
+  }
+  if (h.kind === "water") {
+    const v = waterOf(r);
+    return `<td class="${cls}"><button class="mcell val${v ? " has water" : ""}" ${dis} onclick='openValuePicker("water", ${JSON.stringify(iso)})' aria-label="Вода ${d.getDate()} числа">${v ? fmtNum(v) : ""}</button></td>`;
+  }
+  const isDone = trackerChecks.has(h.id + "|" + iso);
+  return `<td class="${cls}"><button class="mcell${isDone ? " done" : ""}" ${dis}
+    onclick='toggleHabitDay(${JSON.stringify(h.id)}, ${JSON.stringify(iso)})' aria-label="${d.getDate()} число">${isDone ? "✓" : ""}</button></td>`;
+}
+
+function habitTotalHtml(h, days, passed) {
+  const vals = k => days.map(d => dailyLog[isoDay(d)]).filter(Boolean).map(k).filter(v => v != null && v > 0);
+  if (h.kind === "mood") {
+    const v = vals(r => r.mood); if (!v.length) return "—";
+    const a = v.reduce((x, y) => x + y, 0) / v.length;
+    return `${MOOD_BY_V[Math.round(a)].e}<small>${fmtNum(Math.round(a * 10) / 10)} из 5</small>`;
+  }
+  if (h.kind === "sleep") {
+    const v = vals(r => r.sleep_hours != null ? Number(r.sleep_hours) : null); if (!v.length) return "—";
+    return `${fmtNum(Math.round(v.reduce((x, y) => x + y, 0) / v.length * 10) / 10)}<small>ч, сред.</small>`;
+  }
+  if (h.kind === "water") {
+    const v = vals(waterOf); if (!v.length) return "—";
+    return `${fmtNum(Math.round(v.reduce((x, y) => x + y, 0) / v.length * 10) / 10)}<small>л, сред.</small>`;
+  }
+  const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
+  return `${done}/${passed}<small>${passed ? Math.round(done / passed * 100) : 0}%</small>`;
+}
+
+function habitTitleHtml(h) {
+  const sp = HABIT_SPECIAL[h.kind];
+  return sp ? `${sp.icon} ${escapeHtml(h.title)}` : escapeHtml(h.title);
 }
 
 function drawTracker() {
@@ -907,9 +995,9 @@ function drawTracker() {
   if (!box) return;
   const days = monthDays(trackerMonth);
   const todayIso = isoDay(new Date());
-  const passed = days.filter(d => isoDay(d) <= todayIso).length; // сколько дней месяца уже наступило
-  const monthTitle = MONTHS[trackerMonth.getMonth()] + " " + trackerMonth.getFullYear();
-  const prevName = MONTHS[(trackerMonth.getMonth() + 11) % 12].toLowerCase();
+  const passed = days.filter(d => isoDay(d) <= todayIso).length;
+  const mPrev = MONTHS[(trackerMonth.getMonth() + 11) % 12], mNext = MONTHS[(trackerMonth.getMonth() + 1) % 12];
+  const prevName = mPrev.toLowerCase();
 
   const head = days.map(d => {
     const wd = (d.getDay() + 6) % 7;
@@ -917,60 +1005,83 @@ function drawTracker() {
     return `<th class="${cls}">${d.getDate()}<span>${WEEKDAYS[wd]}</span></th>`;
   }).join("");
 
-  const rows = trackerHabits.map(h => {
-    const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
-    const pct = passed ? Math.round(done / passed * 100) : 0;
+  const nRows = Math.min(40, Math.max(HABIT_ROWS, trackerHabits.length + 1));
+  const rows = Array.from({ length: nRows }, (_, i) => {
+    const h = trackerHabits[i];
+    if (!h) {
+      const usedT = new Set(trackerHabits.map(x => x.title.toLowerCase()));
+      const hints = HABIT_ROW_HINTS.filter(t => !usedT.has(t.toLowerCase()) && !trackerHabits.some(x => x.kind !== "check" && HABIT_SPECIAL[x.kind].title === t));
+      const hint = hints[i - trackerHabits.length];
+      return `<tr class="habit-empty">
+        <td class="mt-num">${i + 1}</td>
+        <td class="mt-name"><button class="habit-slot no-print" onclick="openHabitPicker()">+ <i>${hint ? "например: " + escapeHtml(hint) : "впишите привычку"}</i></button></td>
+        ${days.map(d => { const wd = (d.getDay() + 6) % 7; return `<td class="${wd >= 5 ? "we" : ""}${isoDay(d) === todayIso ? " today" : ""}"></td>`; }).join("")}
+        <td class="mt-total"></td><td></td></tr>`;
+    }
     return `<tr>
-      <td class="mt-name">${escapeHtml(h.title)}</td>
-      ${days.map(d => {
-        const iso = isoDay(d), wd = (d.getDay() + 6) % 7;
-        const isDone = trackerChecks.has(h.id + "|" + iso);
-        const cls = [wd >= 5 ? "we" : "", iso === todayIso ? "today" : ""].join(" ");
-        return `<td class="${cls}"><button class="mcell${isDone ? " done" : ""}" ${iso > todayIso ? "disabled" : ""}
-          onclick='toggleHabitDay(${JSON.stringify(h.id)}, ${JSON.stringify(iso)})' aria-label="${d.getDate()} число">${isDone ? "✓" : ""}</button></td>`;
-      }).join("")}
-      <td class="mt-total">${done}/${passed}<small>${pct}%</small></td>
+      <td class="mt-num">${i + 1}</td>
+      <td class="mt-name"><button class="habit-title" title="Переименовать" onclick='renameHabit(${JSON.stringify(h.id)})'>${habitTitleHtml(h)}</button></td>
+      ${days.map(d => habitCellHtml(h, d, todayIso)).join("")}
+      <td class="mt-total">${habitTotalHtml(h, days, passed)}</td>
       <td><button class="habit-del" title="Удалить привычку" onclick='deleteHabit(${JSON.stringify(h.id)}, ${JSON.stringify(h.title)})'>×</button></td>
     </tr>`;
   }).join("");
 
-  const foot = trackerHabits.length ? `<tfoot><tr><td class="mt-name" style="font-size:12px;color:var(--muted);">Выполнено за день</td>${days.map(d => {
+  const checkHabits = trackerHabits.filter(h => h.kind === "check");
+  const foot = checkHabits.length ? `<tfoot><tr><td></td><td class="mt-name" style="font-size:12px;color:var(--muted);">Выполнено за день</td>${days.map(d => {
     const iso = isoDay(d);
-    const n = trackerHabits.filter(h => trackerChecks.has(h.id + "|" + iso)).length;
+    const n = checkHabits.filter(h => trackerChecks.has(h.id + "|" + iso)).length;
     return `<td>${iso <= todayIso ? n : ""}</td>`;
   }).join("")}<td></td><td></td></tr></tfoot>` : "";
 
+  const special = k => trackerHabits.some(h => h.kind === k);
+  const sleepVals = days.map(d => Number(dailyLog[isoDay(d)]?.sleep_hours) || 0);
+  const waterVals = days.map(d => waterOf(dailyLog[isoDay(d)]) || 0);
+  const moodCounts = MOODS.map(m => ({ label: m.e + " " + m.label, value: days.filter(d => dailyLog[isoDay(d)]?.mood === m.v).length, color: m.color }));
+
   box.innerHTML = `
     ${printTitleHtml("Трекер привычек")}
-    ${monthToolbarHtml("Трекер привычек")}
-    ${trackerHabits.length ? `
-      <div class="scroll-hint">Листайте таблицу вправо или поверните телефон горизонтально</div>
-      <div class="month-flip">
-      <button class="flip-btn no-print" onclick="changeTrackerMonth(-1)" aria-label="Предыдущий месяц">‹<span>${MONTHS[(trackerMonth.getMonth() + 11) % 12]}</span></button>
-      <div class="month-wrap">
-        <table class="month-table">
-          <thead><tr><th class="mt-name">Привычка</th>${head}<th class="mt-total">Итог</th><th></th></tr></thead>
-          <tbody>${rows}</tbody>
-          ${foot}
-        </table>
+    <div class="habit-head">
+      <button class="month-pill no-print" onclick="changeTrackerMonth(-1)">‹ ${mPrev}</button>
+      <div class="habit-month"><div>${MONTHS[trackerMonth.getMonth()].toUpperCase()}</div><span>${trackerMonth.getFullYear()}</span></div>
+      <button class="month-pill no-print" onclick="changeTrackerMonth(1)">${mNext} ›</button>
+    </div>
+    <div class="tracker-toolbar no-print" style="justify-content:flex-end;">
+      <div class="tracker-actions">
+        ${monthKey(trackerMonth) !== monthKey(new Date()) ? `<button class="btn btn-ghost btn-small" onclick="changeTrackerMonth(0, true)">Текущий месяц</button>` : ""}
+        ${!trackerHabits.length && prevMonthHabits.length ? `<button class="btn btn-ghost btn-small" onclick="copyPrevMonthHabits()">Перенести привычки из месяца «${prevName}» (${prevMonthHabits.length})</button>` : ""}
+        ${downloadBtnHtml("Трекер привычек")}
       </div>
-      <button class="flip-btn no-print" onclick="changeTrackerMonth(1)" aria-label="Следующий месяц">›<span>${MONTHS[(trackerMonth.getMonth() + 1) % 12]}</span></button>
-      </div>` : `<div class="empty-table">На ${monthTitle.toLowerCase()} привычек пока нет. Впишите первую, например «Пить 2 литра воды» или «10 минут чтения»
-        ${prevMonthHabits.length ? `<br><br><button class="btn btn-small" onclick="copyPrevMonthHabits()">Перенести привычки из месяца «${prevName}» (${prevMonthHabits.length})</button>` : ""}</div>`}
-    ${trackerHabits.length && passed ? `<div class="table-title" style="margin-top:20px;">Выполнение за месяц</div>
-      ${hBarChartSvg(trackerHabits.map(h => {
+    </div>
+    <p class="section-note no-print">Нажмите на пустую строку, чтобы вписать свою привычку или выбрать из подсказок. Отмечайте каждый день: ✓ — сделано, в строках «Настроение», «Сон» и «Вода» выбирайте смайлик, часы или литры</p>
+    <div class="scroll-hint">Листайте таблицу вправо или поверните телефон горизонтально</div>
+    <div class="month-wrap">
+      <table class="month-table">
+        <thead><tr><th class="mt-num"></th><th class="mt-name">Привычки</th>${head}<th class="mt-total">Итог</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+        ${foot}
+      </table>
+    </div>
+    ${checkHabits.length && passed ? `<div class="table-title" style="margin-top:20px;">Выполнение за месяц</div>
+      ${hBarChartSvg(checkHabits.map(h => {
         const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
         return { label: h.title, value: Math.round(done / passed * 100) };
       }), { max: 100, fmt: v => v + "%" })}` : ""}
-    <div class="habit-add no-print">
-      <input id="newHabitInput" class="input" type="text" maxlength="80" placeholder="Новая привычка" onkeydown="if(event.key==='Enter')addHabit()">
-      <button class="btn" onclick="addHabit()">Добавить</button>
-    </div>
+    ${special("mood") && moodCounts.some(c => c.value) ? `<div class="table-title" style="margin-top:18px;">🌈 Настроение за месяц</div>${hBarChartSvg(moodCounts, { fmt: v => v + " " + daysWord(v) })}` : ""}
+    ${special("sleep") && sleepVals.some(v => v) ? `<div class="table-title" style="margin-top:18px;">😴 Сон, часов <span style="color:var(--muted);font-size:13px;">(норма 7–9 ч)</span></div>${dayBarsSvg(days, sleepVals, { max: 10, norms: [7, 9], color: "#9CC3F0", unit: "ч" })}` : ""}
+    ${special("water") && waterVals.some(v => v) ? `<div class="table-title" style="margin-top:18px;">💧 Вода, литров</div>${dayBarsSvg(days, waterVals, { max: 3, norms: [], color: "#7FC8E8", unit: "л" })}` : ""}
     <div id="trackerMsg" class="msg"></div>`;
 
   const todayCell = box.querySelector("th.today");
   const wrap = box.querySelector(".month-wrap");
   if (todayCell && wrap && wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = Math.max(0, todayCell.offsetLeft - wrap.clientWidth / 2);
+}
+
+function redrawTrackerKeepScroll() {
+  const wrap = document.querySelector(".month-wrap"), sl = wrap ? wrap.scrollLeft : 0, st = window.scrollY;
+  drawTracker();
+  const w2 = document.querySelector(".month-wrap"); if (w2) w2.scrollLeft = sl;
+  window.scrollTo(0, st);
 }
 
 async function changeTrackerMonth(step, reset) {
@@ -979,19 +1090,59 @@ async function changeTrackerMonth(step, reset) {
   await renderTrackerTab();
 }
 
+/* ---------- Выбор привычки: своя или из подсказок ---------- */
+function openHabitPicker() {
+  const used = new Set(trackerHabits.map(h => h.kind));
+  const usedTitles = new Set(trackerHabits.map(h => h.title.toLowerCase()));
+  const specials = Object.entries(HABIT_SPECIAL).filter(([k]) => !used.has(k));
+  showModal(`
+    <h3 style="margin:0 0 6px;color:var(--cream);font-family:PT Serif,Georgia,serif;font-weight:500;">Новая привычка</h3>
+    <p class="section-note" style="margin:0 0 10px;">Впишите свою привычку или нажмите на подсказку — её можно изменить перед добавлением</p>
+    <input id="newHabitInput" class="input" type="text" maxlength="80" placeholder="Например: Чтение 30 минут" data-kind="check"
+      oninput="this.dataset.kind='check';document.querySelectorAll('.hint-chip').forEach(c=>c.classList.remove('sel'))" onkeydown="if(event.key==='Enter')addHabit()">
+    ${specials.length ? `<div class="table-title" style="margin:14px 0 6px;font-size:15px;">Отмечать каждый день значением</div>
+      <div class="hint-chips">${specials.map(([k, s]) => `<button type="button" class="hint-chip" onclick='pickHint(this, ${JSON.stringify(s.title)}, "${k}")'>${s.icon} ${s.title} <small>— ${s.hint}</small></button>`).join("")}</div>` : ""}
+    <div class="table-title" style="margin:14px 0 6px;font-size:15px;">Привычки с отметкой ✓</div>
+    <div class="hint-chips">${HABIT_SUGGESTIONS.filter(t => !usedTitles.has(t.toLowerCase())).map(t => `<button type="button" class="hint-chip" onclick='pickHint(this, ${JSON.stringify(t)}, "check")'>${escapeHtml(t)}</button>`).join("")}</div>
+    <div id="habitPickMsg" class="msg"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn" onclick="addHabit()">Добавить</button>
+    </div>`);
+  setTimeout(() => document.getElementById("newHabitInput")?.focus(), 50);
+}
+function pickHint(btn, title, kind) {
+  const inp = document.getElementById("newHabitInput");
+  inp.value = title; inp.dataset.kind = kind;
+  document.querySelectorAll(".hint-chip").forEach(c => c.classList.toggle("sel", c === btn));
+  if (kind === "check") { inp.focus(); inp.setSelectionRange(title.length, title.length); }
+}
+
 async function addHabit() {
   const input = document.getElementById("newHabitInput");
   const title = (input?.value || "").trim();
-  if (!title) { setMsgEl("trackerMsg", "Введите название привычки", false); return; }
-  const { error } = await supabaseClient.from("habits").insert({ user_id: window.currentUserId, title, month: monthKey(trackerMonth), sort_order: trackerHabits.length });
-  if (error) { setMsgEl("trackerMsg", "Не удалось добавить: " + error.message, false); return; }
+  const kind = input?.dataset.kind || "check";
+  if (!title) { setMsgEl("habitPickMsg", "Впишите привычку или выберите подсказку", false); return; }
+  if (kind !== "check" && trackerHabits.some(h => h.kind === kind)) { setMsgEl("habitPickMsg", "Такая строка уже есть в этом месяце", false); return; }
+  const { error } = await supabaseClient.from("habits").insert({ user_id: window.currentUserId, title, kind, month: monthKey(trackerMonth), sort_order: trackerHabits.length });
+  if (error) { setMsgEl("habitPickMsg", "Не удалось добавить: " + error.message, false); return; }
+  closeModal();
   await loadTrackerData();
-  drawTracker();
-  document.getElementById("newHabitInput")?.focus();
+  redrawTrackerKeepScroll();
+}
+
+async function renameHabit(id) {
+  const h = trackerHabits.find(x => x.id === id); if (!h) return;
+  const t = prompt("Название привычки:", h.title);
+  if (t === null) return;
+  const title = t.trim().slice(0, 80); if (!title || title === h.title) return;
+  const { error } = await supabaseClient.from("habits").update({ title }).eq("id", id);
+  if (error) { customAlert("Не удалось переименовать: " + error.message); return; }
+  h.title = title; redrawTrackerKeepScroll();
 }
 
 async function copyPrevMonthHabits() {
-  const rows = prevMonthHabits.map((h, i) => ({ user_id: window.currentUserId, title: h.title, month: monthKey(trackerMonth), sort_order: i }));
+  const rows = prevMonthHabits.map((h, i) => ({ user_id: window.currentUserId, title: h.title, kind: h.kind || "check", month: monthKey(trackerMonth), sort_order: i }));
   const { error } = await supabaseClient.from("habits").insert(rows);
   if (error) { setMsgEl("trackerMsg", "Не удалось перенести: " + error.message, false); return; }
   await loadTrackerData();
@@ -1002,26 +1153,27 @@ async function toggleHabitDay(habitId, iso) {
   const key = habitId + "|" + iso;
   const wasDone = trackerChecks.has(key);
   if (wasDone) trackerChecks.delete(key); else trackerChecks.add(key);
-  const wrap = document.querySelector(".month-wrap");
-  const scroll = wrap ? wrap.scrollLeft : 0;
-  drawTracker();
-  const w2 = document.querySelector(".month-wrap"); if (w2) w2.scrollLeft = scroll;
+  redrawTrackerKeepScroll();
   const { error } = await (wasDone
     ? supabaseClient.from("habit_checks").delete().eq("habit_id", habitId).eq("day", iso)
     : supabaseClient.from("habit_checks").insert({ habit_id: habitId, user_id: window.currentUserId, day: iso }));
   if (error) {
     if (wasDone) trackerChecks.add(key); else trackerChecks.delete(key);
-    drawTracker();
+    redrawTrackerKeepScroll();
     setMsgEl("trackerMsg", "Не удалось сохранить отметку. Проверьте интернет и попробуйте ещё раз", false);
   }
 }
 
 async function deleteHabit(habitId, title) {
-  if (!(await customConfirm(`Удалить привычку «${title}» вместе со всеми отметками за этот месяц?`))) return;
+  const h = trackerHabits.find(x => x.id === habitId);
+  const msg = h && h.kind !== "check"
+    ? `Удалить строку «${title}»? Записи по дням сохранятся — строку можно добавить снова`
+    : `Удалить привычку «${title}» вместе со всеми отметками за этот месяц?`;
+  if (!(await customConfirm(msg))) return;
   const { error } = await supabaseClient.from("habits").delete().eq("id", habitId);
   if (error) { customAlert("Не удалось удалить: " + error.message); return; }
   await loadTrackerData();
-  drawTracker();
+  redrawTrackerKeepScroll();
 }
 
 /* ---------- Ежедневные записи (настроение, сон, вода, благодарность) ---------- */
@@ -1029,7 +1181,7 @@ let dailyLog = {}; // "YYYY-MM-DD" -> запись
 async function loadDaily() {
   const days = monthDays(trackerMonth);
   const { data, error } = await supabaseClient.from("daily_log")
-    .select("day, mood, mood_note, sleep_hours, water_glasses, gratitude")
+    .select("day, mood, mood_note, sleep_hours, water_glasses, water_l, gratitude")
     .eq("user_id", window.currentUserId).gte("day", isoDay(days[0])).lte("day", isoDay(days[days.length - 1]));
   if (error) throw error;
   dailyLog = {};
@@ -1051,48 +1203,10 @@ const MOODS = [
 ];
 const MOOD_BY_V = Object.fromEntries(MOODS.map(m => [m.v, m]));
 
-async function renderMoodTab() { await loadDaily(); drawMoodTab(); }
-
-function drawMoodTab() {
-  const box = document.getElementById("trackerBox");
-  if (!box) return;
-  const days = monthDays(trackerMonth), todayIso = isoDay(new Date());
-  const lead = (days[0].getDay() + 6) % 7;
-  const cells = Array(lead).fill(`<div class="cal-cell empty"></div>`).concat(days.map(d => {
-    const iso = isoDay(d), r = dailyLog[iso], m = r && r.mood ? MOOD_BY_V[r.mood] : null;
-    return `<button class="cal-cell${iso === todayIso ? " today" : ""}" ${iso > todayIso ? "disabled" : ""}
-      style="${m ? `background:${m.color}33;border-color:${m.color};` : ""}" onclick='openMoodPicker(${JSON.stringify(iso)})'>
-      <span class="cal-num">${d.getDate()}</span><span class="cal-emoji">${m ? m.e : ""}</span>${r && r.mood_note ? `<span class="cal-note-dot"></span>` : ""}
-    </button>`;
-  })).join("");
-  const counts = MOODS.map(m => ({ label: m.e + " " + m.label, value: days.filter(d => dailyLog[isoDay(d)]?.mood === m.v).length, color: m.color }));
-  const filled = counts.reduce((a, c) => a + c.value, 0);
-  const avg = filled ? days.reduce((a, d) => a + (dailyLog[isoDay(d)]?.mood || 0), 0) / filled : 0;
-  const top = filled ? counts.slice().sort((a, b) => b.value - a.value)[0] : null;
-  const notes = days.filter(d => dailyLog[isoDay(d)]?.mood_note);
-
-  box.innerHTML = `
-    ${printTitleHtml("Трекер настроения")}
-    ${monthToolbarHtml("Трекер настроения")}
-    <p class="section-note no-print">Нажмите на день и выберите, какое было настроение. Можно добавить короткую заметку — что на него повлияло</p>
-    <div class="cal-grid">${WEEKDAYS.map(w => `<div class="cal-head">${w}</div>`).join("")}${cells}</div>
-    <div class="mood-legend">${MOODS.map(m => `<span><span class="bmi-dot" style="background:${m.color};"></span>${m.e} ${m.label}</span>`).join("")}</div>
-    <div class="table-title" style="margin-top:22px;">Настроение за месяц</div>
-    ${filled ? `
-      <div class="stat-row">
-        <div class="stat-box"><span>Отмечено дней</span><strong>${filled}</strong></div>
-        <div class="stat-box"><span>Чаще всего</span><strong style="font-size:21px;">${top.label}</strong></div>
-        <div class="stat-box"><span>Средняя оценка</span><strong>${fmtNum(Math.round(avg * 10) / 10)} из 5</strong></div>
-      </div>
-      ${hBarChartSvg(counts, { fmt: v => v + " " + daysWord(v) })}` : `<div class="empty-table">Пока нет отметок за этот месяц</div>`}
-    ${notes.length ? `<div class="table-title" style="margin-top:20px;">Заметки</div>
-      ${notes.map(d => { const r = dailyLog[isoDay(d)]; const m = MOOD_BY_V[r.mood]; return `<div class="grat-day"><b>${fmtDate(isoDay(d))} ${m ? m.e : ""}</b><div style="margin-top:4px;">${escapeHtml(r.mood_note)}</div></div>`; }).join("")}` : ""}`;
-}
-
 function openMoodPicker(iso) {
   const r = dailyLog[iso] || {};
   showModal(`
-    <h3 style="margin:0;color:var(--cream);font-family:PT Serif,Georgia,serif;font-weight:500;">Настроение · ${fmtDate(iso)}</h3>
+    <h3 style="margin:0;color:var(--cream);font-family:PT Serif,Georgia,serif;font-weight:500;">🌈 Настроение · ${fmtDate(iso)}</h3>
     <div class="mood-pick">${MOODS.map(m => `<button type="button" class="mood-btn ${r.mood === m.v ? "sel" : ""}" data-v="${m.v}" style="--mc:${m.color};" onclick="selectMood(this)"><span>${m.e}</span>${m.label}</button>`).join("")}</div>
     <textarea id="moodNote" class="input" rows="3" maxlength="300" placeholder="Что повлияло на настроение (необязательно)">${escapeHtml(r.mood_note || "")}</textarea>
     <div id="moodMsg" class="msg"></div>
@@ -1114,90 +1228,45 @@ async function saveMood(iso, clear) {
   try {
     await saveDaily(iso, clear ? { mood: null, mood_note: null } : { mood: Number(sel.dataset.v), mood_note: note });
     closeModal();
-    drawMoodTab();
+    redrawTrackerKeepScroll();
   } catch (e) { setMsgEl("moodMsg", "Не удалось сохранить: " + e.message, false); }
 }
 
-/* ---------- Сон и вода ---------- */
-const GLASS_ML = 250;
-async function renderSleepTab() { await loadDaily(); drawSleepTab(); }
-
-function sleepChartsHtml() {
-  const days = monthDays(trackerMonth);
-  const sleep = days.map(d => Number(dailyLog[isoDay(d)]?.sleep_hours) || 0);
-  const water = days.map(d => Number(dailyLog[isoDay(d)]?.water_glasses) || 0);
-  const sDays = sleep.filter(v => v > 0), wDays = water.filter(v => v > 0);
-  const avgS = sDays.length ? sDays.reduce((a, b) => a + b, 0) / sDays.length : 0;
-  const avgW = wDays.length ? wDays.reduce((a, b) => a + b, 0) / wDays.length : 0;
-  return `
-    <div class="stat-row">
-      <div class="stat-box"><span>Средний сон</span><strong>${sDays.length ? fmtNum(Math.round(avgS * 10) / 10) + " ч" : "—"}</strong><em>норма 7–9 ч</em></div>
-      <div class="stat-box"><span>Ночей со сном 7–9 ч</span><strong>${sleep.filter(v => v >= 7 && v <= 9).length}</strong><em>из ${sDays.length} отмеченных</em></div>
-      <div class="stat-box"><span>В среднем воды</span><strong>${wDays.length ? fmtNum(Math.round(avgW * 10) / 10) : "—"}</strong><em>стаканов в день (1 стакан = ${GLASS_ML} мл)</em></div>
-      <div class="stat-box"><span>Дней с нормой воды</span><strong>${water.filter(v => v >= 8).length}</strong><em>8 стаканов и больше</em></div>
+/* ---------- Сон и вода: выбор значения за день ---------- */
+function openValuePicker(kind, iso) {
+  const r = dailyLog[iso] || {};
+  const isSleep = kind === "sleep";
+  const cur = isSleep ? (r.sleep_hours != null ? Number(r.sleep_hours) : null) : waterOf(r);
+  const opts = isSleep ? SLEEP_OPTIONS : WATER_OPTIONS;
+  const unit = isSleep ? "ч" : "л";
+  showModal(`
+    <h3 style="margin:0;color:var(--cream);font-family:PT Serif,Georgia,serif;font-weight:500;">${isSleep ? "😴 Сон" : "💧 Вода"} · ${fmtDate(iso)}</h3>
+    <p class="section-note" style="margin:6px 0 10px;">${isSleep ? "Сколько часов вы спали в ночь на этот день? Норма — 7–9 часов" : "Сколько литров воды вы выпили за день?"}</p>
+    <div class="hint-chips">${opts.map(v => `<button type="button" class="hint-chip${cur === v ? " sel" : ""}" onclick='saveValue("${kind}", ${JSON.stringify(iso)}, ${v})'>${fmtNum(v)} ${unit}</button>`).join("")}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+      <input id="valInput" class="input" type="text" inputmode="decimal" style="max-width:140px;" placeholder="Своё, ${unit}" value="${cur != null && !opts.includes(cur) ? fmtNum(cur) : ""}"
+        onkeydown='if(event.key==="Enter")saveValue("${kind}", ${JSON.stringify(iso)})'>
+      <button class="btn btn-small" onclick='saveValue("${kind}", ${JSON.stringify(iso)})'>Сохранить</button>
     </div>
-    <div class="table-title">Сон, часов</div>
-    ${dayBarsSvg(days, sleep, { max: 10, norms: [7, 9], color: "#9CC3F0", unit: "ч" })}
-    <div class="table-title" style="margin-top:16px;">Вода, стаканов</div>
-    ${dayBarsSvg(days, water, { max: 10, norms: [8], color: "#7FC8E8", unit: "стак." })}`;
+    <div id="valMsg" class="msg"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+      ${cur != null ? `<button class="btn btn-ghost" onclick='saveValue("${kind}", ${JSON.stringify(iso)}, null)'>Очистить</button>` : ""}
+      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+    </div>`);
 }
-
-function drawSleepTab() {
-  const box = document.getElementById("trackerBox");
-  if (!box) return;
-  const days = monthDays(trackerMonth), todayIso = isoDay(new Date());
-  const rows = days.filter(d => isoDay(d) <= todayIso).reverse().map(d => {
-    const iso = isoDay(d), r = dailyLog[iso] || {}, future = false;
-    const w = Number(r.water_glasses) || 0;
-    return `<tr${iso === todayIso ? ` style="background:rgba(244,165,130,.10);"` : ""}>
-      <td style="white-space:nowrap;">${d.getDate()} <span style="color:var(--muted);font-size:12px;">${WEEKDAYS[(d.getDay() + 6) % 7]}</span></td>
-      <td><input class="input mini-input" type="text" inputmode="decimal" placeholder="—" value="${r.sleep_hours != null ? fmtNum(r.sleep_hours) : ""}" ${future ? "disabled" : ""} onchange='saveSleep(${JSON.stringify(iso)}, this)'></td>
-      <td><div class="water-ctrl">
-        <button ${future ? "disabled" : ""} onclick='changeWater(${JSON.stringify(iso)}, -1)' aria-label="Меньше">−</button>
-        <b id="water-${iso}">${w}</b>
-        <button ${future ? "disabled" : ""} onclick='changeWater(${JSON.stringify(iso)}, 1)' aria-label="Больше">+</button>
-        <span class="water-drops" id="drops-${iso}">${"💧".repeat(Math.min(w, 12))}</span>
-      </div></td>
-    </tr>`;
-  }).join("");
-  box.innerHTML = `
-    ${printTitleHtml("Сон и вода")}
-    ${monthToolbarHtml("Сон и вода")}
-    <div id="sleepCharts">${sleepChartsHtml()}</div>
-    <div class="no-print">
-      <div class="table-title" style="margin-top:20px;">Записи по дням</div>
-      <p class="section-note">Сон — сколько часов спали в ночь на этот день. Вода — нажимайте «+» за каждый выпитый стакан</p>
-      <div id="sleepMsg" class="msg"></div>
-      <div style="overflow-x:auto;"><table class="data-table">
-        <thead><tr><th>День</th><th>Сон, ч</th><th>Вода, стаканов</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="3" class="empty-table">Этот месяц ещё не начался</td></tr>`}</tbody>
-      </table></div>
-    </div>`;
-}
-
-function refreshSleepCharts() { const el = document.getElementById("sleepCharts"); if (el) el.innerHTML = sleepChartsHtml(); }
-
-async function saveSleep(iso, input) {
-  const raw = input.value.trim();
-  const v = raw === "" ? null : parseNum(raw);
-  if (v !== null && !(v >= 0 && v <= 24)) { setMsgEl("sleepMsg", "Сон укажите в часах, например 7,5", false); input.focus(); return; }
+async function saveValue(kind, iso, v) {
+  if (v === undefined) {
+    const raw = (document.getElementById("valInput")?.value || "").trim();
+    v = raw === "" ? null : parseNum(raw);
+  }
+  const max = kind === "sleep" ? 24 : 10;
+  if (v !== null && !(v > 0 && v <= max)) { setMsgEl("valMsg", kind === "sleep" ? "Укажите часы, например 7,5" : "Укажите литры, например 1,5", false); return; }
+  if (v !== null) v = Math.round(v * 2) / 2;
   try {
-    await saveDaily(iso, { sleep_hours: v === null ? null : Math.round(v * 2) / 2 });
-    setMsgEl("sleepMsg", "", true);
-    refreshSleepCharts();
-  } catch (e) { setMsgEl("sleepMsg", "Не удалось сохранить: " + e.message, false); }
-}
-
-async function changeWater(iso, delta) {
-  const cur = Number(dailyLog[iso]?.water_glasses) || 0;
-  const n = Math.max(0, Math.min(30, cur + delta));
-  if (n === cur) return;
-  try {
-    await saveDaily(iso, { water_glasses: n });
-    const b = document.getElementById("water-" + iso); if (b) b.textContent = n;
-    const dr = document.getElementById("drops-" + iso); if (dr) dr.textContent = "💧".repeat(Math.min(n, 12));
-    refreshSleepCharts();
-  } catch (e) { setMsgEl("sleepMsg", "Не удалось сохранить: " + e.message, false); }
+    await saveDaily(iso, kind === "sleep" ? { sleep_hours: v } : { water_l: v, water_glasses: null });
+    closeModal();
+    redrawTrackerKeepScroll();
+  } catch (e) { setMsgEl("valMsg", "Не удалось сохранить: " + e.message, false); }
 }
 
 /* ---------- Дневник благодарности ---------- */
@@ -1332,101 +1401,22 @@ async function saveWheel() {
   setMsgEl("wheelMsg", "Сохранено", true);
 }
 
-/* ---------- Челленджи 21 день ---------- */
-const CHALLENGE_TEMPLATES = [
-  { e: "💧", t: "Пить 2 литра воды" }, { e: "🌅", t: "Первый час утра без телефона" }, { e: "🚶", t: "Прогулка 30 минут" },
-  { e: "📖", t: "Читать 20 минут" }, { e: "🧘", t: "Медитация 10 минут" }, { e: "🍬", t: "День без сахара" },
-  { e: "🙏", t: "3 благодарности в день" }, { e: "⏰", t: "Подъём в 6:30" }, { e: "🤸", t: "Зарядка 15 минут" },
-  { e: "📵", t: "Без соцсетей после 21:00" }, { e: "💌", t: "Одно доброе дело в день" }, { e: "🛌", t: "Ложиться спать до 23:00" }
-];
-let challenges = [];
-async function renderChallengeTab() {
-  const { data, error } = await supabaseClient.from("challenges").select("id, title, start_day, done, created_at")
-    .eq("user_id", window.currentUserId).order("created_at", { ascending: false });
-  if (error) throw error;
-  challenges = (data || []).map(c => Object.assign(c, { done: Array.isArray(c.done) ? c.done : [] }));
-  drawChallengeTab();
-}
-function addDays(iso, n) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d + n); }
-
-function drawChallengeTab() {
-  const box = document.getElementById("trackerBox");
-  if (!box) return;
-  const todayIso = isoDay(new Date());
-  const cards = challenges.map(c => {
-    const n = c.done.length, finished = n >= 21;
-    const endIso = isoDay(addDays(c.start_day, 20));
-    return `<div class="ch-card">
-      <div class="ch-head">
-        <div><div class="ch-title">${escapeHtml(c.title)}${finished ? " 🎉" : ""}</div>
-          <div class="ch-meta">${fmtDate(c.start_day)} — ${fmtDate(endIso)} · выполнено ${n} из 21${finished ? " · челлендж пройден!" : ""}</div></div>
-        <button class="habit-del" title="Удалить челлендж" onclick='deleteChallenge(${JSON.stringify(c.id)}, ${JSON.stringify(c.title)})'>×</button>
-      </div>
-      <div class="progress"><div style="width:${Math.round(n / 21 * 100)}%;"></div></div>
-      <div class="ch-grid">${Array.from({ length: 21 }, (_, i) => {
-        const day = i + 1, iso = isoDay(addDays(c.start_day, i)), done = c.done.includes(day);
-        return `<button class="ch-day${done ? " done" : ""}" ${iso > todayIso ? "disabled" : ""} title="${fmtDate(iso)}" onclick='toggleChallengeDay(${JSON.stringify(c.id)}, ${day})'>${done ? "✓" : day}<br><span style="font-size:9px;font-weight:400;">${addDays(c.start_day, i).getDate()}.${String(addDays(c.start_day, i).getMonth() + 1).padStart(2, "0")}</span></button>`;
-      }).join("")}</div>
-    </div>`;
-  }).join("");
-
-  box.innerHTML = `
-    ${printTitleHtml("Челленджи 21 день", false)}
-    ${plainToolbarHtml("Челленджи 21 день")}
-    <p class="section-note no-print">За 21 день новое действие становится привычкой. Выберите челлендж и отмечайте каждый день. Пропустили день — не страшно, продолжайте дальше</p>
-    ${challenges.length ? `<div class="table-title">Прогресс</div>
-      ${hBarChartSvg(challenges.map(c => ({ label: c.title, value: c.done.length })), { max: 21, fmt: v => v + " из 21" })}
-      <div style="margin-top:16px;">${cards}</div>` : `<div class="empty-table">Челленджей пока нет. Выберите первый ниже</div>`}
-    <div class="no-print" style="margin-top:18px;">
-      <div class="table-title">Начать новый челлендж</div>
-      <div class="chips">${CHALLENGE_TEMPLATES.map(t => `<button class="chip" onclick='startChallenge(${JSON.stringify(t.e + " " + t.t)})'>${t.e} ${escapeHtml(t.t)}</button>`).join("")}</div>
-      <div class="habit-add" style="margin-top:0;">
-        <input id="chCustom" class="input" maxlength="80" placeholder="Свой челлендж" onkeydown="if(event.key==='Enter')startChallenge()">
-        <button class="btn" onclick="startChallenge()">Начать с сегодня</button>
-      </div>
-      <div id="chMsg" class="msg"></div>
-    </div>`;
-}
-
-async function startChallenge(title) {
-  title = (title || document.getElementById("chCustom")?.value || "").trim();
-  if (!title) { setMsgEl("chMsg", "Выберите челлендж или впишите свой", false); return; }
-  const { error } = await supabaseClient.from("challenges").insert({ user_id: window.currentUserId, title, start_day: isoDay(new Date()), done: [] });
-  if (error) { setMsgEl("chMsg", "Не удалось начать: " + error.message, false); return; }
-  await renderChallengeTab();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-async function toggleChallengeDay(id, day) {
-  const c = challenges.find(x => x.id === id); if (!c) return;
-  const done = c.done.includes(day) ? c.done.filter(d => d !== day) : c.done.concat(day).sort((a, b) => a - b);
-  const old = c.done; c.done = done; drawChallengeTab();
-  const { error } = await supabaseClient.from("challenges").update({ done }).eq("id", id);
-  if (error) { c.done = old; drawChallengeTab(); customAlert("Не удалось сохранить отметку: " + error.message); }
-}
-async function deleteChallenge(id, title) {
-  if (!(await customConfirm(`Удалить челлендж «${title}»?`))) return;
-  const { error } = await supabaseClient.from("challenges").delete().eq("id", id);
-  if (error) { customAlert("Не удалось удалить: " + error.message); return; }
-  await renderChallengeTab();
-}
-
 /* ---------- Итоги месяца ---------- */
 async function renderSummaryTab() {
   const uid = window.currentUserId;
   const days = monthDays(trackerMonth), first = isoDay(days[0]), last = isoDay(days[days.length - 1]);
   const prevKey = monthKey(new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() - 1, 1));
-  const [, , wl, bw, ch] = await Promise.all([
-    loadTrackerData(), loadDaily(),
+  const [, wl, bw] = await Promise.all([
+    loadTrackerData(),
     supabaseClient.from("weight_log").select("day, weight_kg").eq("user_id", uid).gte("day", first).lte("day", last).order("day"),
-    supabaseClient.from("balance_wheel").select("month, scores").eq("user_id", uid).in("month", [monthKey(trackerMonth), prevKey]),
-    supabaseClient.from("challenges").select("title, start_day, done").eq("user_id", uid)
+    supabaseClient.from("balance_wheel").select("month, scores").eq("user_id", uid).in("month", [monthKey(trackerMonth), prevKey])
   ]);
   const box = document.getElementById("trackerBox");
   if (!box) return;
   const todayIso = isoDay(new Date());
   const passed = days.filter(d => isoDay(d) <= todayIso).length;
 
-  const habitStats = trackerHabits.map(h => {
+  const habitStats = trackerHabits.filter(h => h.kind === "check").map(h => {
     const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
     return { label: h.title, value: passed ? Math.round(done / passed * 100) : 0, done };
   });
@@ -1438,11 +1428,10 @@ async function renderSummaryTab() {
   const moodFilled = moodCounts.reduce((a, c) => a + c.value, 0);
   const moodAvg = moodFilled ? days.reduce((a, d) => a + (dailyLog[isoDay(d)]?.mood || 0), 0) / moodFilled : null;
   const sleepV = days.map(d => Number(dailyLog[isoDay(d)]?.sleep_hours) || 0).filter(v => v > 0);
-  const waterV = days.map(d => Number(dailyLog[isoDay(d)]?.water_glasses) || 0).filter(v => v > 0);
+  const waterV = days.map(d => waterOf(dailyLog[isoDay(d)]) || 0).filter(v => v > 0);
   const gratDays = days.filter(d => (dailyLog[isoDay(d)]?.gratitude || []).length).length;
   const weights = (wl.data || []).map(r => Number(r.weight_kg));
   const wheel = (bw.data || []).find(r => r.month === monthKey(trackerMonth))?.scores;
-  const chActive = (ch.data || []).filter(c => { const end = isoDay(addDays(c.start_day, 20)); return c.start_day <= last && end >= first; });
   const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
 
   const box2 = (label, value, note) => `<div class="stat-box"><span>${label}</span><strong>${value}</strong>${note ? `<em>${note}</em>` : ""}</div>`;
@@ -1453,11 +1442,10 @@ async function renderSummaryTab() {
       ${box2("Привычки выполнены", totalPct === null ? "—" : totalPct + "%", habitStats.length ? habitStats.length + " привычек" : "привычек нет")}
       ${box2("Настроение", moodAvg === null ? "—" : fmtNum(Math.round(moodAvg * 10) / 10) + " из 5", moodFilled ? "отмечено " + moodFilled + " " + daysWord(moodFilled) : "")}
       ${box2("Средний сон", sleepV.length ? fmtNum(Math.round(avg(sleepV) * 10) / 10) + " ч" : "—", "")}
-      ${box2("Вода в среднем", waterV.length ? fmtNum(Math.round(avg(waterV) * 10) / 10) + " стак." : "—", "")}
+      ${box2("Вода в среднем", waterV.length ? fmtNum(Math.round(avg(waterV) * 10) / 10) + " л" : "—", "")}
       ${box2("Дней благодарности", gratDays, "из " + passed)}
       ${box2("Вес за месяц", weights.length >= 2 ? ((weights[weights.length - 1] - weights[0]) > 0 ? "+" : "") + fmtNum(Math.round((weights[weights.length - 1] - weights[0]) * 10) / 10) + " кг" : (weights.length ? fmtNum(weights[0]) + " кг" : "—"), weights.length >= 2 ? fmtNum(weights[0]) + " → " + fmtNum(weights[weights.length - 1]) + " кг" : "")}
       ${box2("Колесо баланса", wheel ? fmtNum(Math.round(avg(wheel) * 10) / 10) + " из 10" : "—", wheel ? "средний балл" : "оценки нет")}
-      ${box2("Челленджи", chActive.length, chActive.filter(c => (c.done || []).length >= 21).length + " пройдено")}
     </div>
     ${habitStats.length ? `
       <div class="table-title" style="margin-top:8px;">Привычки</div>

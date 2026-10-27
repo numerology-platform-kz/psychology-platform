@@ -382,3 +382,9 @@ grant select, insert, update, delete on public.awk_rooms to authenticated;
 -- awk_rooms.game ('awakening' | 'lila'); awk_messages.image_url, sender_key, deleted
 -- awk_can_archive(host): admin — все комнаты; teacher — свои и комнаты своих учеников
 -- RPC: awk_messages_list(room, after, key), awk_send(room, author, body, audio, image, key), awk_delete_message(id, key)
+
+-- Трекер: тип строки привычки и вода в литрах
+alter table public.habits add column if not exists kind text not null default 'check';
+alter table public.habits drop constraint if exists habits_kind_check;
+alter table public.habits add constraint habits_kind_check check (kind in ('check','mood','sleep','water'));
+alter table public.daily_log add column if not exists water_l numeric(3,1);
