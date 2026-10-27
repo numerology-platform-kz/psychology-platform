@@ -421,8 +421,8 @@ create or replace function public.grant_item_for(p_uid uuid, p_key text)
 returns jsonb language sql stable security definer set search_path = public as $$
   select case when s ? p_key then s -> p_key when position('.' in p_key) > 0 then s -> split_part(p_key, '.', 1) end
   from (select granted_scope s from access_periods a
-         where a.profile_id = p_uid and lower(a.status) = 'active'
-           and (a.payment_status is null or lower(a.payment_status) = 'paid')
+         where a.profile_id = p_uid and lower(a.status::text) = 'active'
+           and (a.payment_status is null or lower(a.payment_status::text) = 'paid')
            and (a.is_unlimited or a.ends_at is null or a.ends_at >= now())
          order by a.created_at desc limit 1) x;
 $$;
