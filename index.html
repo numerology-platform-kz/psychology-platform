@@ -211,6 +211,7 @@ select.input option { background: #0E1A3A; color: #fff; }
 .hint-chip small { color: var(--muted); }
 .hint-chip:hover { border-color: var(--coral); }
 .hint-chip.sel { border-color: var(--coral); background: rgba(244,165,130,.2); color: #fff; }
+.access-notice { border: 1px solid #F2D16B; background: rgba(242,209,107,.10); color: #f6e3a6; border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; line-height: 1.5; display: grid; gap: 6px; }
 .scope-group td { color: var(--cream); font-weight: 600; background: rgba(244,165,130,.06); }
 .scope-sub td:first-child { padding-left: 22px; }
 .habit-del { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 4px; }
@@ -577,7 +578,10 @@ select.input option { background: #0E1A3A; color: #fff; }
    ============================================================ */
 const SUPABASE_URL = "https://kfsyeejdwrcmwqacmigb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4osUqgFDEHZ99UhULjHLIQ_M1vYSDe0";
+const IS_RECOVERY_LINK = /type=recovery/.test(window.location.hash + window.location.search);
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Переход по ссылке «Восстановить пароль» из письма — показываем форму нового пароля
+supabaseClient.auth.onAuthStateChange((event) => { if (event === "PASSWORD_RECOVERY") showSetNewPasswordForm(); });
 
 /* ============================================================
    ЭМБЛЕМА — бабочка
@@ -736,6 +740,26 @@ function showWelcome(show) {
   if (el) el.style.display = show ? "" : "none";
 }
 
+// Предупреждение на главной: доступ к разделу заканчивается в ближайшие 7 дней или уже закончился
+function accessNoticeHtml() {
+  if (isAdmin()) return "";
+  const g = window.currentUserGrant || {}, now = Date.now(), soon = [], ended = [];
+  SECTIONS.forEach(sec => (SECTION_ITEMS[sec.key] || [sec]).forEach(i => {
+    const it = scopeItem(g, i.key);
+    if (!it || !it.granted || it.unlimited || !it.ends_at) return;
+    const left = new Date(it.ends_at).getTime() - now, name = SECTION_ITEMS[sec.key] ? i.title : sec.title;
+    if (left < 0) ended.push(name);
+    else if (left <= 7 * 86400000) soon.push(`«${name}» — до ${fmtDate(it.ends_at)} (${Math.max(1, Math.ceil(left / 86400000))} ${daysWord(Math.max(1, Math.ceil(left / 86400000)))})`);
+  }));
+  const meta = window.currentUserAccessMeta || {};
+  if (meta.isExpired && !Object.keys(g).length) ended.push("платформа");
+  if (!soon.length && !ended.length) return "";
+  return `<div class="access-notice">
+    ${soon.length ? `<div>⏳ Скоро заканчивается доступ: ${escapeHtml(soon.join("; "))}. Чтобы продлить, обратитесь к администратору или своему учителю.</div>` : ""}
+    ${ended.length ? `<div>🔒 Срок доступа закончился: ${escapeHtml(ended.map(n => "«" + n + "»").join(", "))}.</div>` : ""}
+  </div>`;
+}
+
 function showHome() {
   setActiveSection("");
   showWelcome(true);
@@ -752,7 +776,7 @@ function showHome() {
       </div>`;
     return;
   }
-  contentEl().innerHTML = `<div class="cards">${visible.map(s => {
+  contentEl().innerHTML = accessNoticeHtml() + `<div class="cards">${visible.map(s => {
     const open = hasGrant(s.key);
     return `<div class="card${open ? "" : " locked"}" onclick="showSection('${s.key}')" role="button" tabindex="0">
       <div class="card-icon">${s.icon}</div>
@@ -1743,9 +1767,12 @@ function termSelectHtml(attrs) {
     ${TERM_OPTIONS.map(t => `<option value="${t.value}">${t.label}</option>`).join("")}
   </select>`;
 }
+// Срок считается календарными месяцами: выдали 27 октября на 1 месяц — доступ действует до 27 ноября
 function computeEndsAt(termValue) {
   if (termValue === "unlimited") return { unlimited: true, ends_at: null };
-  return { unlimited: false, ends_at: new Date(Date.now() + Number(termValue) * 86400000).toISOString() };
+  const months = { "30": 1, "90": 3, "180": 6, "365": 12 }[termValue] || 1;
+  const d = new Date(); d.setMonth(d.getMonth() + months);
+  return { unlimited: false, ends_at: d.toISOString() };
 }
 function itemStatusHtml(item) {
   if (!item || !item.granted) return `<span style="color:var(--muted);">закрыто</span>`;
@@ -2183,12 +2210,16 @@ async function loadScopeForSelectedUser() {
     const item = scopeItem(scope, el.dataset.key);
     el.checked = !!(item && item.granted);
     const term = document.querySelector(`[data-term="${el.dataset.key}"]`);
+    if (term) term.querySelector('option[value="keep"]')?.remove();
     if (term && item && item.granted) {
       if (item.unlimited || !item.ends_at) term.value = "unlimited";
       else {
-        const daysLeft = Math.round((new Date(item.ends_at) - new Date()) / 86400000);
-        const closest = TERM_OPTIONS.filter(t => t.value !== "unlimited").reduce((a, b) => Math.abs(b.value - daysLeft) < Math.abs(a.value - daysLeft) ? b : a);
-        term.value = closest.value;
+        // Уже выданный срок не сдвигаем: по умолчанию «без изменений, до такой-то даты»
+        const opt = document.createElement("option");
+        opt.value = "keep";
+        opt.textContent = (new Date(item.ends_at) >= new Date() ? "до " : "истёк ") + fmtDate(item.ends_at) + " (как есть)";
+        term.prepend(opt);
+        term.value = "keep";
       }
     }
   });
@@ -2205,7 +2236,10 @@ function collectScope() {
   document.querySelectorAll(".scope-cell").forEach(el => {
     const key = el.dataset.key;
     const term = document.querySelector(`[data-term="${key}"]`)?.value || "unlimited";
-    scope[key] = el.checked ? Object.assign({ granted: true }, computeEndsAt(term)) : { granted: false };
+    const old = scopeItem(window.loadedScope, key);
+    scope[key] = !el.checked ? { granted: false }
+      : term === "keep" && old ? { granted: true, unlimited: !!old.unlimited, ends_at: old.ends_at || null }
+      : Object.assign({ granted: true }, computeEndsAt(term));
     if (!el.checked && scopeItem(window.loadedScope, key)?.visible) scope[key].visible = true;
   });
   document.querySelectorAll(".scope-visible").forEach(el => {
@@ -2229,8 +2263,6 @@ async function grantPlatformAccess() {
   if (!anything) { setMsgEl("accessAdminMsg", "Отметьте хотя бы один пункт", false); return; }
   setMsgEl("accessAdminMsg", "Выдаю доступ...", true);
 
-  await supabaseClient.from("access_periods").update({ status: "expired" }).eq("profile_id", userId).eq("status", "active");
-
   // Общий срок записи = самый поздний из выбранных сроков (или бессрочно, если все бессрочные)
   let overallUnlimited = true, overallEndsAt = null;
   Object.values(scope).forEach(item => {
@@ -2239,16 +2271,27 @@ async function grantPlatformAccess() {
     if (item.ends_at && (!overallEndsAt || new Date(item.ends_at) > new Date(overallEndsAt))) overallEndsAt = item.ends_at;
   });
 
-  const { error } = await supabaseClient.from("access_periods").insert({
+  // Сначала сохраняем новый доступ, и только если получилось — закрываем прежний
+  const { data: created, error } = await supabaseClient.from("access_periods").insert({
     profile_id: userId, status: "active", payment_status: "paid",
     starts_at: new Date().toISOString(),
     ends_at: overallUnlimited ? null : overallEndsAt,
     is_unlimited: overallUnlimited,
     granted_scope: scope
-  });
+  }).select("id").single();
   if (error) { setMsgEl("accessAdminMsg", "Не удалось выдать доступ: " + error.message, false); return; }
-  setMsgEl("accessAdminMsg", "Доступ выдан", true);
+  await supabaseClient.from("access_periods").update({ status: "expired" }).eq("profile_id", userId).eq("status", "active").neq("id", created.id);
+  const names = [];
+  SECTIONS.forEach(sec => {
+    (SECTION_ITEMS[sec.key] || [sec]).forEach(i => {
+      const it = scope[i.key];
+      if (it && it.granted) names.push(`${SECTION_ITEMS[sec.key] ? i.title : sec.title} — ${it.unlimited || !it.ends_at ? "бессрочно" : "до " + fmtDate(it.ends_at)}`);
+    });
+  });
+  if (scope.access?.granted) names.push(`Доступ (управление учениками) — ${scope.access.unlimited || !scope.access.ends_at ? "бессрочно" : "до " + fmtDate(scope.access.ends_at)}`);
+  setMsgEl("accessAdminMsg", names.length ? "Доступ выдан: " + names.join("; ") : "Сохранено: открытых разделов нет", true);
   await loadAdminUsers();
+  await loadScopeForSelectedUser();
 }
 
 /* ============================================================
@@ -2393,7 +2436,10 @@ async function sendPasswordReset() {
   say("Ссылка для восстановления пароля отправлена на вашу почту.", true);
 }
 
+let recoveryFormShown = false;
 function showSetNewPasswordForm() {
+  if (recoveryFormShown) return;
+  recoveryFormShown = true;
   document.body.style.visibility = "visible";
   document.body.innerHTML = `
     <div class="auth-shell">
@@ -2459,7 +2505,7 @@ async function logoutUser() {
    ============================================================ */
 async function checkAuth() {
   try {
-    if (window.location.hash.includes("type=recovery")) { showSetNewPasswordForm(); return; }
+    if (IS_RECOVERY_LINK || window.location.hash.includes("type=recovery")) { showSetNewPasswordForm(); return; }
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
     if (sessionError) { showLogin("Не удалось проверить авторизацию."); return; }
     if (!session) { showLogin(); return; }

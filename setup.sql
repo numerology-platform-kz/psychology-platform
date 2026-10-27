@@ -388,3 +388,70 @@ alter table public.habits add column if not exists kind text not null default 'c
 alter table public.habits drop constraint if exists habits_kind_check;
 alter table public.habits add constraint habits_kind_check check (kind in ('check','mood','sleep','water'));
 alter table public.daily_log add column if not exists water_l numeric(3,1);
+-- 1) Трекер и игровые комнаты: записывать можно только при открытом доступе
+do $$
+declare t text;
+begin
+  foreach t in array array['habits','habit_checks','daily_log','balance_wheel','body_profile','weight_log','challenges'] loop
+    execute format('drop policy if exists %I on public.%I', t || '_own', t);
+    execute format('drop policy if exists %I on public.%I', t || '_own_select', t);
+    execute format('drop policy if exists %I on public.%I', t || '_own_insert', t);
+    execute format('drop policy if exists %I on public.%I', t || '_own_update', t);
+    execute format('drop policy if exists %I on public.%I', t || '_own_delete', t);
+    execute format('create policy %I on public.%I for select using (user_id = auth.uid())', t || '_own_select', t);
+    execute format('create policy %I on public.%I for insert with check (user_id = auth.uid() and public.has_grant(''tracker''))', t || '_own_insert', t);
+    execute format('create policy %I on public.%I for update using (user_id = auth.uid()) with check (user_id = auth.uid() and public.has_grant(''tracker''))', t || '_own_update', t);
+    execute format('create policy %I on public.%I for delete using (user_id = auth.uid() and public.has_grant(''tracker''))', t || '_own_delete', t);
+  end loop;
+end $$;
+
+drop policy if exists awk_rooms_host_all on public.awk_rooms;
+drop policy if exists awk_rooms_host_select on public.awk_rooms;
+drop policy if exists awk_rooms_host_update on public.awk_rooms;
+drop policy if exists awk_rooms_host_delete on public.awk_rooms;
+drop policy if exists awk_rooms_host_insert on public.awk_rooms;
+create policy awk_rooms_host_select on public.awk_rooms for select to authenticated using (host_id = auth.uid());
+create policy awk_rooms_host_update on public.awk_rooms for update to authenticated using (host_id = auth.uid()) with check (host_id = auth.uid());
+create policy awk_rooms_host_delete on public.awk_rooms for delete to authenticated using (host_id = auth.uid());
+create policy awk_rooms_host_insert on public.awk_rooms for insert to authenticated
+  with check (host_id = auth.uid() and public.has_grant('games.' || game));
+
+-- 2) Учитель может открыть ученику только то, что открыто ему самому, и не дольше своего срока
+create or replace function public.grant_item_for(p_uid uuid, p_key text)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select case when s ? p_key then s -> p_key when position('.' in p_key) > 0 then s -> split_part(p_key, '.', 1) end
+  from (select granted_scope s from access_periods a
+         where a.profile_id = p_uid and lower(a.status) = 'active'
+           and (a.payment_status is null or lower(a.payment_status) = 'paid')
+           and (a.is_unlimited or a.ends_at is null or a.ends_at >= now())
+         order by a.created_at desc limit 1) x;
+$$;
+revoke all on function public.grant_item_for(uuid, text) from public, anon, authenticated;
+
+create or replace function public.check_teacher_grant()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_role text; e record; v_mine jsonb; v_lim timestamptz; v_end timestamptz;
+begin
+  if auth.uid() is null then return new; end if;
+  select role::text into v_role from profiles where id = auth.uid();
+  if v_role is distinct from 'teacher' then return new; end if;
+  for e in select key, value from jsonb_each(coalesce(new.granted_scope, '{}'::jsonb)) loop
+    if not public.grant_item_active(e.value) then continue; end if;
+    if e.key = 'access' then raise exception 'Учитель не может выдавать доступ к управлению учениками'; end if;
+    v_mine := public.grant_item_for(auth.uid(), e.key);
+    if not public.grant_item_active(v_mine) then
+      raise exception 'Нельзя открыть ученику раздел, который закрыт у вас самих';
+    end if;
+    if not coalesce((v_mine ->> 'unlimited')::boolean, false) and v_mine ->> 'ends_at' is not null then
+      v_lim := (v_mine ->> 'ends_at')::timestamptz;
+      v_end := case when coalesce((e.value ->> 'unlimited')::boolean, false) or e.value ->> 'ends_at' is null then 'infinity'::timestamptz else (e.value ->> 'ends_at')::timestamptz end;
+      if v_end > v_lim + interval '1 minute' then
+        raise exception 'Срок для ученика не может быть дольше вашего: до %', to_char(v_lim, 'DD.MM.YYYY');
+      end if;
+    end if;
+  end loop;
+  return new;
+end $$;
+drop trigger if exists access_periods_teacher_check on public.access_periods;
+create trigger access_periods_teacher_check before insert or update of granted_scope on public.access_periods
+  for each row execute function public.check_teacher_grant();
