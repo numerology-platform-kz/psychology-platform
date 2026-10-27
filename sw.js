@@ -1,4 +1,4 @@
-const CACHE_NAME = "psychology-v4";
+const CACHE_NAME = "psychology-v5";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

@@ -198,6 +198,11 @@ select.input option { background: #0E1A3A; color: #fff; }
 .habit-head .month-pill:last-child { justify-self: end; }
 .month-pill { justify-self: start; border: 1px solid var(--line-soft); background: rgba(244,165,130,.10); color: var(--cream); border-radius: 999px; padding: 7px 16px; cursor: pointer; font-family: PT Serif, Georgia, serif; font-size: 15px; }
 .month-pill:hover { border-color: var(--coral); }
+.habit-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px 24px; margin-top: 22px; }
+.hchart .table-title { margin-bottom: 8px; }
+.habit-title-wrap { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.leaf-branch { flex-shrink: 0; }
+@media (max-width: 600px) { .leaf-branch { display: none; } }
 .habit-month { text-align: center; font-family: PT Serif, Georgia, serif; color: var(--cream); line-height: 1.1; }
 .habit-month div { font-size: 30px; letter-spacing: 2px; }
 .habit-month span { color: var(--coral); letter-spacing: 4px; font-size: 15px; }
@@ -322,6 +327,37 @@ select.input option { background: #0E1A3A; color: #fff; }
   .month-table .mt-num { position: static; background: #fff !important; color: #555 !important; }
   .habit-head { margin-bottom: 4px; } .habit-month div { font-size: 22px; color: #1B2B5A; } .habit-month span { color: #E8826A; }
   .mcell.val.has { background: #eef4fb !important; color: #222 !important; }
+  /* Красивая таблица привычек: один альбомный лист */
+  .print-landscape .print-title { font-size: 11px; color: #8a7a72; margin: 0 0 2px; text-align: right; }
+  .habit-table-wrap { border: 2px solid #E8A48C !important; border-radius: 10px; overflow: hidden !important; background: #FFFCFA !important; }
+  .habit-table-wrap .month-table { border-collapse: collapse; width: 100%; font-size: 10px; }
+  .habit-table-wrap .month-table th, .habit-table-wrap .month-table td { border: 1px solid #EBD3C6 !important; padding: 0 !important; background: #FFFCFA !important; color: #1B2B5A !important; }
+  .habit-table-wrap .month-table thead th { background: #FBE1D3 !important; color: #1B2B5A !important; font-weight: 700; height: 30px; }
+  .habit-table-wrap .month-table thead th span { color: #A0705E !important; font-size: 8px; }
+  .habit-table-wrap .month-table .we { background: #F4EEFA !important; }
+  .habit-table-wrap .month-table thead th.we { background: #EADDF6 !important; }
+  .habit-table-wrap .month-table .today { background: inherit; }
+  .habit-table-wrap .month-table .mt-num { background: #FDEEE6 !important; color: #A0705E !important; width: 22px; min-width: 22px; font-size: 9px; }
+  .habit-table-wrap .month-table .mt-name { background: #FFF5EF !important; color: #1B2B5A !important; font-size: 11px; min-width: 150px; max-width: 190px; padding: 0 6px !important; font-weight: 600; }
+  .habit-table-wrap .month-table thead .mt-name { background: #FBE1D3 !important; font-family: PT Serif, Georgia, serif; font-size: 13px; }
+  .habit-table-wrap .month-table .mt-total { background: #FFF5EF !important; font-size: 10px; min-width: 44px; }
+  .habit-table-wrap .month-table .mt-total small { color: #C9654B !important; font-size: 8px; }
+  .habit-table-wrap .month-table tbody td { height: min(7.2mm, calc(132mm / var(--prows, 19))); }
+  .habit-table-wrap .month-table tfoot { display: table-row-group; }
+  .habit-table-wrap .month-table thead { display: table-row-group; }
+  .habit-table-wrap .month-table tfoot td { height: 6mm; background: #FDEEE6 !important; color: #A0705E !important; font-size: 9px; }
+  .habit-table-wrap .month-table td:last-child, .habit-table-wrap .month-table th:last-child { display: none; }
+  .habit-table-wrap .mcell { width: 15px; height: 15px; border: 1.2px solid #E8B9A6 !important; border-radius: 4px; background: #fff !important; font-size: 10px; color: #fff !important; }
+  .habit-table-wrap .mcell.done { background: #E8826A !important; border-color: #E8826A !important; }
+  .habit-table-wrap .mcell.val { width: 18px; font-size: 8px; color: #1B2B5A !important; }
+  .habit-table-wrap .mcell.val.has { background: #E3EFFB !important; border-color: #9CC3F0 !important; }
+  .habit-table-wrap .mcell.val.has.water { background: #DDF2F8 !important; border-color: #7FC8E8 !important; }
+  .habit-table-wrap tr.habit-empty .mcell { display: none; }
+  .habit-charts { break-before: page; display: block !important; margin-top: 0; }
+  .hchart { display: inline-block; vertical-align: top; width: 48.5%; margin: 0 1% 5mm 0; break-inside: avoid; border: 1.5px solid #EBD3C6; border-radius: 10px; padding: 4mm; background: #FFFCFA !important; box-sizing: border-box; }
+  .hchart svg { width: 100%; height: auto; }
+  .habit-charts:empty { display: none; }
+  .habit-title-wrap { gap: 4px; } .leaf-branch { display: block !important; width: 70px; height: 32px; }
   .ch-day:disabled { opacity: 1; }
 }
 
@@ -885,7 +921,7 @@ function hBarChartSvg(items, opts) {
   opts = opts || {};
   const max = opts.max || Math.max(1, ...items.map(i => i.value));
   const W = 680, rowH = 32, labelW = opts.labelW || 210, barW = W - labelW - 70, H = items.length * rowH + 6;
-  return `<svg viewBox="0 0 ${W} ${H}" class="chart-svg" style="max-width:${W}px;">
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chart-svg" style="max-width:${W}px;">
     ${items.map((it, i) => {
       const y = i * rowH + 4, w = Math.max(0, barW * Math.min(it.value, max) / max);
       return `<text x="0" y="${y + 18}" style="fill:var(--text);font-size:13px;">${escapeHtml(shortLabel(it.label, 30))}</text>
@@ -905,11 +941,20 @@ function dayBarsSvg(days, values, opts) {
   const norms = (opts.norms || []).map(v => `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="#8fe3b0" stroke-width="1.4" stroke-dasharray="5 4"/>`).join("");
   const bars = values.map((v, i) => v > 0 ? `<rect x="${pl + i * bw + 1.5}" y="${y(v)}" width="${Math.max(2, bw - 3)}" height="${H - pb - y(v)}" rx="3" fill="${opts.color}"><title>${days[i].getDate()}: ${fmtNum(v)} ${opts.unit || ""}</title></rect>` : "").join("");
   const labels = days.map((d, i) => `<text x="${pl + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle" style="fill:var(--muted);font-size:9px;">${d.getDate()}</text>`).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" class="chart-svg">${grid}${bars}${norms}${labels}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chart-svg">${grid}${bars}${norms}${labels}</svg>`;
 }
 
 
-const HABIT_ROWS = 20;
+const HABIT_ROWS = 19;
+let trackerExtraRows = 0; // строки, добавленные кнопкой «Добавить ещё строку»
+function leafBranchSvg(flip) {
+  const leaves = [[14, 22, -35], [26, 15, -20], [38, 10, -8], [50, 7, 6], [62, 6, 18], [24, 31, 30], [36, 28, 40], [48, 24, 48]];
+  return `<svg class="leaf-branch" width="86" height="40" viewBox="0 0 86 40" aria-hidden="true" style="${flip ? "transform:scaleX(-1);" : ""}">
+    <path d="M4 34 C24 26 46 14 82 6" stroke="#8FB3A8" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    ${leaves.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="7" ry="3" fill="#A9C9BE" fill-opacity=".85" transform="rotate(${r} ${x} ${y})"/>`).join("")}
+  </svg>`;
+}
+function addHabitRow() { trackerExtraRows = Math.min(trackerExtraRows + 1, 21); redrawTrackerKeepScroll(); }
 const HABIT_SPECIAL = {
   mood:  { icon: "🌈", title: "Настроение", hint: "смайлик каждый день" },
   sleep: { icon: "😴", title: "Сон",        hint: "сколько часов спали" },
@@ -1005,7 +1050,7 @@ function drawTracker() {
     return `<th class="${cls}">${d.getDate()}<span>${WEEKDAYS[wd]}</span></th>`;
   }).join("");
 
-  const nRows = Math.min(40, Math.max(HABIT_ROWS, trackerHabits.length + 1));
+  const nRows = Math.min(40, Math.max(HABIT_ROWS, trackerHabits.length) + trackerExtraRows);
   const rows = Array.from({ length: nRows }, (_, i) => {
     const h = trackerHabits[i];
     if (!h) {
@@ -1043,7 +1088,7 @@ function drawTracker() {
     ${printTitleHtml("Трекер привычек")}
     <div class="habit-head">
       <button class="month-pill no-print" onclick="changeTrackerMonth(-1)">‹ ${mPrev}</button>
-      <div class="habit-month"><div>${MONTHS[trackerMonth.getMonth()].toUpperCase()}</div><span>${trackerMonth.getFullYear()}</span></div>
+      <div class="habit-title-wrap">${leafBranchSvg(false)}<div class="habit-month"><div>${MONTHS[trackerMonth.getMonth()].toUpperCase()}</div><span>${trackerMonth.getFullYear()}</span></div>${leafBranchSvg(true)}</div>
       <button class="month-pill no-print" onclick="changeTrackerMonth(1)">${mNext} ›</button>
     </div>
     <div class="tracker-toolbar no-print" style="justify-content:flex-end;">
@@ -1055,23 +1100,28 @@ function drawTracker() {
     </div>
     <p class="section-note no-print">Нажмите на пустую строку, чтобы вписать свою привычку или выбрать из подсказок. Отмечайте каждый день: ✓ — сделано, в строках «Настроение», «Сон» и «Вода» выбирайте смайлик, часы или литры</p>
     <div class="scroll-hint">Листайте таблицу вправо или поверните телефон горизонтально</div>
-    <div class="month-wrap">
+    <div class="month-wrap habit-table-wrap" style="--prows:${nRows + (checkHabits.length ? 1 : 0)};">
       <table class="month-table">
-        <thead><tr><th class="mt-num"></th><th class="mt-name">Привычки</th>${head}<th class="mt-total">Итог</th><th></th></tr></thead>
+        <thead><tr><th class="mt-num">№</th><th class="mt-name">Привычки</th>${head}<th class="mt-total">Итог</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
         ${foot}
       </table>
     </div>
-    ${checkHabits.length && passed ? `<div class="table-title" style="margin-top:20px;">Выполнение за месяц</div>
+    ${nRows < 40 ? `<button class="btn btn-ghost btn-small no-print" style="margin-top:10px;" onclick="addHabitRow()">＋ Добавить ещё строку</button>` : ""}
+    <div class="habit-charts">
+    ${checkHabits.length && passed ? `<div class="hchart"><div class="table-title">Выполнение за месяц</div>
       ${hBarChartSvg(checkHabits.map(h => {
         const done = days.filter(d => trackerChecks.has(h.id + "|" + isoDay(d))).length;
         return { label: h.title, value: Math.round(done / passed * 100) };
-      }), { max: 100, fmt: v => v + "%" })}` : ""}
-    ${special("mood") && moodCounts.some(c => c.value) ? `<div class="table-title" style="margin-top:18px;">🌈 Настроение за месяц</div>${hBarChartSvg(moodCounts, { fmt: v => v + " " + daysWord(v) })}` : ""}
-    ${special("sleep") && sleepVals.some(v => v) ? `<div class="table-title" style="margin-top:18px;">😴 Сон, часов <span style="color:var(--muted);font-size:13px;">(норма 7–9 ч)</span></div>${dayBarsSvg(days, sleepVals, { max: 10, norms: [7, 9], color: "#9CC3F0", unit: "ч" })}` : ""}
-    ${special("water") && waterVals.some(v => v) ? `<div class="table-title" style="margin-top:18px;">💧 Вода, литров</div>${dayBarsSvg(days, waterVals, { max: 3, norms: [], color: "#7FC8E8", unit: "л" })}` : ""}
+      }), { max: 100, fmt: v => v + "%" })}</div>` : ""}
+    ${special("mood") && moodCounts.some(c => c.value) ? `<div class="hchart"><div class="table-title">🌈 Настроение за месяц</div>${hBarChartSvg(moodCounts, { fmt: v => v + " " + daysWord(v) })}</div>` : ""}
+    ${special("sleep") && sleepVals.some(v => v) ? `<div class="hchart"><div class="table-title">😴 Сон, часов <span style="color:var(--muted);font-size:13px;">(норма 7–9 ч)</span></div>${dayBarsSvg(days, sleepVals, { max: 10, norms: [7, 9], color: "#9CC3F0", unit: "ч" })}</div>` : ""}
+    ${special("water") && waterVals.some(v => v) ? `<div class="hchart"><div class="table-title">💧 Вода, литров</div>${dayBarsSvg(days, waterVals, { max: 3, norms: [], color: "#7FC8E8", unit: "л" })}</div>` : ""}
+    </div>
     <div id="trackerMsg" class="msg"></div>`;
 
+  const charts = box.querySelector(".habit-charts");
+  if (charts && !charts.children.length) charts.remove();
   const todayCell = box.querySelector("th.today");
   const wrap = box.querySelector(".month-wrap");
   if (todayCell && wrap && wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = Math.max(0, todayCell.offsetLeft - wrap.clientWidth / 2);
@@ -1087,6 +1137,7 @@ function redrawTrackerKeepScroll() {
 async function changeTrackerMonth(step, reset) {
   const now = new Date();
   trackerMonth = reset ? new Date(now.getFullYear(), now.getMonth(), 1) : new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() + step, 1);
+  trackerExtraRows = 0;
   await renderTrackerTab();
 }
 
