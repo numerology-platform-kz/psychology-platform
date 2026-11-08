@@ -455,3 +455,18 @@ end $$;
 drop trigger if exists access_periods_teacher_check on public.access_periods;
 create trigger access_periods_teacher_check before insert or update of granted_scope on public.access_periods
   for each row execute function public.check_teacher_grant();
+
+-- Ручное подтверждение email администратором (если письмо не дошло)
+create or replace function public.admin_unconfirmed_users()
+returns setof uuid language sql stable security definer set search_path = public, auth as $$
+  select u.id from auth.users u where u.email_confirmed_at is null and public.get_my_role() = 'admin';
+$$;
+create or replace function public.admin_confirm_email(p_user uuid)
+returns boolean language plpgsql security definer set search_path = public, auth as $$
+begin
+  if public.get_my_role() is distinct from 'admin' then raise exception 'Подтверждать email может только администратор'; end if;
+  update auth.users set email_confirmed_at = coalesce(email_confirmed_at, now()) where id = p_user;
+  return found;
+end $$;
+revoke all on function public.admin_unconfirmed_users(), public.admin_confirm_email(uuid) from public, anon;
+grant execute on function public.admin_unconfirmed_users(), public.admin_confirm_email(uuid) to authenticated;

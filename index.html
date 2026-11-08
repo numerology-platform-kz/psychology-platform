@@ -1990,6 +1990,21 @@ async function saveTeacherSchoolName() {
 let adminUsersFilterTeacher = null;
 const nameOf = (u) => [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(" ") || u.email || "Пользователь";
 
+async function adminConfirmEmail(userId, name, btn) {
+  if (!(await customConfirm("Подтвердить email пользователя «" + name + "»? После этого он сразу сможет войти со своим паролем."))) return;
+  if (btn) { btn.disabled = true; btn.textContent = "..."; }
+  try {
+    const { error } = await supabaseClient.rpc("admin_confirm_email", { p_user: userId });
+    if (error) throw error;
+    const wrap = btn ? btn.parentElement : null;
+    if (wrap) wrap.innerHTML = `<span style="color:var(--ok);font-size:12px;">✓ Email подтверждён</span>`;
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = "Подтвердить"; }
+    customAlert("Не удалось подтвердить email: " + (e.message || e));
+  }
+}
+
 async function loadAdminUsers() {
   const box = document.getElementById("adminUsersTable");
   if (!box) return;
@@ -2036,6 +2051,18 @@ async function loadAdminUsers() {
     if (hasActivePlatformAccess(p)) return `<div style="font-size:11px;color:var(--ok);margin-top:3px;">Доступ активен${p.is_unlimited ? "" : " до " + fmtDate(p.ends_at)}</div>`;
     return `<div style="font-size:11px;color:#e8a94e;margin-top:3px;">Доступ истёк <button class="btn btn-small" style="margin-left:4px;padding:2px 8px;" onclick='scrollToGrantAccess(${JSON.stringify(u.id)})'>Возобновить</button></div>`;
   };
+  // Только администратору: кто не подтвердил email (письмо могло не прийти)
+  let unconfirmed = new Set();
+  if (admin) {
+    try {
+      const { data: uc } = await supabaseClient.rpc("admin_unconfirmed_users");
+      (uc || []).forEach(r => unconfirmed.add(typeof r === "string" ? r : (r.admin_unconfirmed_users || r.id)));
+    } catch (e) { console.warn("Не загрузился список неподтверждённых email:", e); }
+  }
+  const emailBadge = (u) => (admin && unconfirmed.has(u.id))
+    ? `<div style="margin-top:6px;"><span style="color:#ffb27a;font-size:12px;">Email не подтверждён</span>
+        <button class="btn btn-small" style="padding:4px 10px;font-size:12px;margin-left:6px;" onclick='adminConfirmEmail(${JSON.stringify(u.id)}, ${JSON.stringify(nameOf(u))}, this)'>Подтвердить</button></div>`
+    : "";
   const teacherName = (id) => { if (!id) return "—"; const t = allUsers.find(u => u.id === id); return t ? nameOf(t) : "—"; };
 
   const backLink = (admin && adminUsersFilterTeacher)
@@ -2058,7 +2085,7 @@ async function loadAdminUsers() {
             <td>${fmtDateTime(u.created_at)}${u.restored_at ? " / " + fmtDateTime(u.restored_at) : ""}</td>
             ${admin ? `<td style="font-family:'Courier New',monospace;color:var(--coral);font-weight:bold;">${u.role === "teacher" ? escapeHtml(u.id.slice(0, 8).toUpperCase()) : "—"}</td>
                        <td>${u.role === "student" ? escapeHtml(teacherName(u.teacher_id)) : "—"}</td>` : ""}
-            <td>${u.restored_at ? `Восстановлен ${fmtDate(u.restored_at)}` : "Активен"}${accessBadge(u)}</td>
+            <td>${u.restored_at ? `Восстановлен ${fmtDate(u.restored_at)}` : "Активен"}${accessBadge(u)}${emailBadge(u)}</td>
             <td>${u.role === "admin" ? "—" : `<button class="btn btn-ghost btn-small" onclick='deleteUserAccount(${JSON.stringify(u.id)}, ${JSON.stringify(nameOf(u))})'>Удалить</button>`}</td>
           </tr>`).join("")}
         </tbody>
